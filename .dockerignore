@@ -1,0 +1,7 @@
+node_modules
+target
+test-ledger
+.anchor
+.env
+app/.keys
+.git
