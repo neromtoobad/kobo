@@ -1,1 +1,136 @@
-<h1>kobo</h1>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kobo — pocket money for AI agents</title>
+<meta name="description" content="Give an AI agent an on-chain allowance. It pays per call over x402 on Solana, inside caps you set and can pull at any moment." />
+<link rel="icon" href="/logo.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/"><img src="/logo.svg" alt="" width="28" height="28" /><span>Kobo</span></a>
+  <span class="tag">Pocket money for AI agents</span>
+  <div class="spacer"></div>
+  <span class="net"><i></i>Solana devnet</span>
+  <button class="wallet" id="wallet" title="Your burner owner wallet (stored in this browser)">…</button>
+</header>
+
+<main id="app">
+  <!-- onboarding -->
+  <section id="onboard" class="onboard" hidden>
+    <div class="intro">
+      <h1>Give your agent pocket money,<br />not your card.</h1>
+      <p class="lede">Kobo is an allowance on Solana. Your AI agent pays for every API call it makes, over the x402 protocol, straight from a vault you fund. The limits are enforced on chain, so even a confused or tricked agent cannot spend past them. You can pause it at any moment.</p>
+      <ol class="how">
+        <li><b>402</b>A paid API answers "Payment required" with a price.</li>
+        <li><b>Sign</b>The agent signs a Kobo payment for exactly that price. It holds no funds and no SOL.</li>
+        <li><b>Settle</b>The program checks your caps, pays the merchant in under a second, and the data comes back.</li>
+      </ol>
+    </div>
+    <div class="card setup">
+      <div class="step" id="step1">
+        <span class="n">1</span>
+        <div>
+          <h3>Get test dollars</h3>
+          <p class="muted">$5 of devnet test USD into your browser wallet. No sign-up and no SOL needed: Kobo's facilitator pays every network fee.</p>
+          <button class="btn" id="faucet">Get $5 test USD</button>
+          <span class="bal" id="ownerBal"></span>
+        </div>
+      </div>
+      <div class="step" id="step2">
+        <span class="n">2</span>
+        <div>
+          <h3>Set the allowance</h3>
+          <div class="grid2">
+            <label>Fund the vault<span class="inp">$<input id="fAmount" type="number" step="0.5" min="0" value="2" /></span></label>
+            <label>Max per call<span class="inp">$<input id="fPerCall" type="number" step="0.01" min="0.001" value="0.05" /></span></label>
+            <label>Max per day<span class="inp">$<input id="fDaily" type="number" step="0.1" min="0.01" value="1" /></span></label>
+            <label>Expires after<span class="inp"><input id="fHours" type="number" step="1" min="1" value="24" />h</span></label>
+          </div>
+          <p class="label">Merchants it may pay (budget each)</p>
+          <div id="fMerchants" class="mlist"></div>
+          <button class="btn primary" id="open" disabled>Open allowance</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- console -->
+  <section id="console" class="console" hidden>
+    <aside class="col left">
+      <div class="card allowance">
+        <div class="row between">
+          <p class="label">Allowance vault</p>
+          <a id="aLink" class="mono small" target="_blank" rel="noopener">on chain ↗</a>
+        </div>
+        <div class="big mono" id="aVault">$0.00</div>
+        <div class="meter"><div id="aToday"></div></div>
+        <p class="small muted" id="aTodayTxt"></p>
+        <dl class="kv">
+          <dt>Max per call</dt><dd class="mono" id="aPerCall"></dd>
+          <dt>Spent all time</dt><dd class="mono" id="aTotal"></dd>
+          <dt>Calls paid</dt><dd class="mono" id="aCalls"></dd>
+          <dt>Expires</dt><dd class="mono" id="aExp"></dd>
+          <dt>Agent key</dt><dd class="mono" id="aAgent"></dd>
+        </dl>
+        <button class="btn kill" id="pause">Pause agent</button>
+        <div class="row gap">
+          <button class="btn ghost" id="topup">Top up $1</button>
+          <button class="btn ghost" id="withdraw">Withdraw $1</button>
+          <button class="btn ghost" id="limits">Edit caps</button>
+        </div>
+      </div>
+      <div class="card">
+        <p class="label">Merchants</p>
+        <div id="mRows" class="merchants"></div>
+      </div>
+    </aside>
+
+    <section class="col mid">
+      <div class="card agent">
+        <div class="row between">
+          <p class="label">Agent</p>
+          <span class="small muted" id="model"></span>
+        </div>
+        <div id="feed" class="feed">
+          <div class="empty">
+            <p>Ask for something that needs live data. Each tool the agent uses is a separate paid API, bought per call.</p>
+          </div>
+        </div>
+        <div class="chips" id="chips"></div>
+        <form id="ask" class="ask">
+          <textarea id="prompt" rows="2" placeholder="Ask the agent…"></textarea>
+          <button class="btn primary" id="send">Run</button>
+        </form>
+      </div>
+    </section>
+
+    <aside class="col right">
+      <div class="tape">
+        <div class="tape-head">
+          <p class="label">Receipts</p>
+          <p class="small muted">Paid events read back from Solana</p>
+        </div>
+        <div id="tape" class="tape-body"></div>
+        <div class="tape-foot mono">
+          <div><span>Agent spent</span><b id="tSpent">$0.000</b></div>
+          <div><span>Network fees (paid by facilitator)</span><b id="tFees">0 SOL</b></div>
+        </div>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<div id="toast" class="toast" hidden></div>
+<footer class="foot">
+  <span>Program <a id="progLink" class="mono" target="_blank" rel="noopener"></a></span>
+  <span>Built for the MLH Solana Hackathon · devnet only · test money</span>
+</footer>
+<script type="module" src="/main.js"></script>
+</body>
+</html>

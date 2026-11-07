@@ -6,3 +6,4 @@ test-ledger/
 *.key.json
 app/.keys/
 .DS_Store
+app/web/main.js
