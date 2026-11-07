@@ -21,7 +21,7 @@ The agent **holds no money and no SOL.** It only has a key that can ask the vaul
 
 ## Why Solana
 
-Pay-per-call only works when the payment costs less than the call. A Kobo payment is one instruction. It settles in about **1 second** for under **$0.0005** in network fees (5,000 lamports at today's SOL price), which the facilitator covers. On most chains, buying $0.001 of exchange-rate data that way makes no sense. On Solana it does.
+Pay-per-call only works when the payment costs less than the call. A Kobo payment is one instruction. It settles in about **1 second** for under **$0.001** in network fees (10,000 lamports, two signatures, at today's SOL price), which the facilitator covers. On most chains, buying $0.001 of exchange-rate data that way makes no sense. On Solana it does.
 
 ## How a call is paid (x402)
 
