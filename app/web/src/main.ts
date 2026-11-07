@@ -489,13 +489,25 @@ async function main() {
         const b = document.querySelector<HTMLInputElement>(`[data-b="${m.id}"]`);
         merchants[m.id] = Number(b?.value) || 0;
       }
-      await act("open", {
-        amount: Number(($("fAmount") as HTMLInputElement).value),
-        perCall: Number(($("fPerCall") as HTMLInputElement).value),
-        daily: Number(($("fDaily") as HTMLInputElement).value),
-        hours: Number(($("fHours") as HTMLInputElement).value),
-        merchants,
-      });
+      try {
+        await act("open", {
+          amount: Number(($("fAmount") as HTMLInputElement).value),
+          perCall: Number(($("fPerCall") as HTMLInputElement).value),
+          daily: Number(($("fDaily") as HTMLInputElement).value),
+          hours: Number(($("fHours") as HTMLInputElement).value),
+          merchants,
+        });
+      } catch (e) {
+        await refresh();
+        if (!state?.allowance) throw e; // the open itself failed; a later merchant batch failing is recoverable
+      }
+      // list any shop a failed batch left out, one at a time with a retry
+      for (const [id, budget] of Object.entries(merchants)) {
+        if (!budget || state?.merchants?.find((m: any) => m.id === id)?.listed) continue;
+        for (let k = 0; k < 2; k++) {
+          try { await act("merchant", { id, budget }); break; } catch { await new Promise((r) => setTimeout(r, 1200)); }
+        }
+      }
       toast("Allowance opened on Solana");
     });
   $("pause").onclick = () => busy($("pause"), () => act("pause", { paused: !state?.allowance?.paused }));
