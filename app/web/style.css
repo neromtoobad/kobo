@@ -229,3 +229,10 @@ h3 { font: 700 19px var(--disp); letter-spacing: -0.02em; }
   .tag .bud { font-size: 9.5px; }
   .tag input { width: 44px; font-size: 11px; }
 }
+/* desktop: the whole console fits one screen; the feed and the tape scroll inside */
+@media (min-width: 901px) and (min-height: 760px) {
+  .console .chat { height: calc(100vh - var(--street-h) - 50px); min-height: 330px; }
+  .console .feed { max-height: none; min-height: 0; }
+  .console .tape { max-height: calc(100vh - var(--street-h) - 50px); display: flex; flex-direction: column; }
+  .console .tape-body { max-height: none; flex: 1; min-height: 0; }
+}
