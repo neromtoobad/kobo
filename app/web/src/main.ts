@@ -76,22 +76,144 @@ async function act(action: string, args: Record<string, unknown> = {}) {
   return r;
 }
 
-// ---------- rendering ----------
-function renderSetup() {
-  const box = $("fMerchants");
-  const defaults: Record<string, number> = { weather: 0.1, fx: 0.1, ticker: 0.1, wiki: 0.1, wire: 0.1, analyst: 0.3, dossier: 1 };
-  box.innerHTML = cfg.merchants
-    .map(
-      (m) => `<label class="mopt">
-        <input type="checkbox" data-m="${m.id}" checked />
-        <span class="nm">${esc(m.name)}<small>${esc(m.blurb)}</small></span>
-        <span class="pr">${usdFine(m.price)}/call</span>
-        <span class="inp">$<input type="number" step="0.05" min="0" value="${defaults[m.id] ?? 0.1}" data-b="${m.id}" /></span>
-      </label>`,
-    )
+// ---------- the street ----------
+const ART: Record<string, number> = { weather: 1, fx: 2, ticker: 3, wiki: 4, wire: 5, analyst: 6, dossier: 7 };
+const DEFAULT_BUDGET: Record<string, number> = { weather: 0.1, fx: 0.1, ticker: 0.1, wiki: 0.1, wire: 0.1, analyst: 0.3, dossier: 1 };
+const art = (id: string) => `/art/stall-${ART[id] ?? 1}.webp`;
+const POSE = { idle: "/art/agent-1.webp", pay: "/art/agent-2.webp", no: "/art/agent-3.webp", sleep: "/art/agent-4.webp" } as const;
+const shortWhy = (r: string) =>
+  /per-call/.test(r) ? "over per-call cap" : /paused/.test(r) ? "paused" : /today/.test(r) ? "over daily cap" : /budget/.test(r) ? "over shop budget" : /expired/.test(r) ? "expired" : /allow|unknown/i.test(r) ? "not allowed" : "refused";
+const runMarks = new Map<string, { cls: "paid" | "no" | "calling"; note?: string }>();
+const offSetup = new Set<string>();
+let mode: "setup" | "live" | "" = "";
+
+function stallEl(id: string) {
+  return document.querySelector<HTMLElement>(`.stall[data-id="${id}"]`);
+}
+function buildStalls() {
+  $("stalls").innerHTML = cfg.merchants
+    .map((m) => `<div class="stall" data-id="${m.id}" title="${esc(m.blurb)}"><div class="tag"></div><img src="${art(m.id)}" alt="${esc(m.name)}" /><span class="plate"></span></div>`)
     .join("");
+  for (const m of cfg.merchants) {
+    const st = stallEl(m.id)!;
+    st.addEventListener("click", (ev) => {
+      if ((ev.target as HTMLElement).tagName === "INPUT") return;
+      if (mode === "setup") {
+        offSetup.has(m.id) ? offSetup.delete(m.id) : offSetup.add(m.id);
+        renderStreet();
+        return;
+      }
+      const sm = state?.merchants?.find((x: any) => x.id === m.id);
+      if (!sm) return;
+      const v = prompt(`Budget for ${m.name} ($, 0 keeps the agent out)`, String(sm.budget));
+      if (v === null) return;
+      act("merchant", { id: m.id, budget: Number(v) }).catch((e) => toast(esc(String(e.message))));
+    });
+  }
 }
 
+function renderStreet() {
+  const a = state?.allowance;
+  const nextMode = a ? "live" : "setup";
+  for (const m of cfg.merchants) {
+    const st = stallEl(m.id)!;
+    const tag = st.querySelector(".tag")!;
+    const plate = st.querySelector<HTMLElement>(".plate")!;
+    if (nextMode === "setup") {
+      if (mode !== "setup") tag.innerHTML = `<b>${esc(m.name)}</b>${usdFine(m.price)}/call<span class="bud">budget $<input type="number" step="0.05" min="0" value="${DEFAULT_BUDGET[m.id] ?? 0.1}" data-b="${m.id}" /></span>`;
+      st.className = "stall" + (offSetup.has(m.id) ? " off" : "");
+      plate.textContent = offSetup.has(m.id) ? "kept out" : "";
+      continue;
+    }
+    const sm = state.merchants.find((x: any) => x.id === m.id);
+    const allowed = sm?.listed && sm.budget > 0;
+    const mark = runMarks.get(m.id);
+    st.className = "stall" + (!allowed ? " off" : "") + (mark ? " " + mark.cls : "");
+    const name = mark?.cls === "paid" ? `${m.name} ✓` : mark?.cls === "no" ? `${m.name} ✕` : m.name;
+    tag.innerHTML = `<b>${esc(name)}</b>${usdFine(m.price)}<span class="bud">${mark?.cls === "no" ? esc(mark.note ?? "refused") : allowed ? `${usdFine(sm.spent)} of ${usd(sm.budget)}` : "not allowed"}</span>`;
+    plate.textContent = "";
+  }
+  mode = nextMode;
+  const paused = !!a?.paused;
+  $("street").classList.toggle("paused", paused);
+  $("pausedSign").hidden = !paused;
+  if (!walking) pose(paused ? "sleep" : lastPose === "sleep" ? "idle" : lastPose);
+}
+
+// the agent: where it stands, how it looks, what it says
+let lastPose: keyof typeof POSE = "idle";
+let walking = false;
+function pose(p: keyof typeof POSE) {
+  lastPose = p;
+  const img = $<HTMLImageElement>("agentImg");
+  if (!img.src.endsWith(POSE[p])) img.src = POSE[p];
+  $("stop").hidden = p !== "no";
+}
+function say(text: string | null, cls = "") {
+  const s = $("say");
+  s.hidden = !text;
+  if (text) { s.textContent = text; s.className = "say " + cls; }
+}
+function agentX(id: string | null) {
+  const lane = $("lane"), ag = $("agent");
+  const st = id ? stallEl(id) : null;
+  if (!st) return lane.clientWidth / 2 - ag.offsetWidth / 2;
+  return st.offsetLeft + st.offsetWidth / 2 - ag.offsetWidth * 0.78;
+}
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+async function walkTo(id: string | null) {
+  const ag = $("agent");
+  const x = agentX(id);
+  const from = parseFloat(ag.style.left || "0");
+  if (Math.abs(x - from) < 4) return;
+  walking = true;
+  ag.classList.add("walk");
+  ag.style.left = x + "px";
+  const st = id ? stallEl(id) : null;
+  st?.scrollIntoView?.({ behavior: "smooth", block: "nearest", inline: "center" });
+  await wait(780);
+  ag.classList.remove("walk");
+  walking = false;
+}
+function placeAgent() {
+  const ag = $("agent");
+  ag.style.transition = "none";
+  ag.style.left = agentX(currentStall) + "px";
+  const wrap = document.querySelector<HTMLElement>(".lane-wrap")!;
+  if (wrap.scrollWidth > wrap.clientWidth) wrap.scrollLeft = ag.offsetLeft + ag.offsetWidth / 2 - wrap.clientWidth / 2;
+  void ag.offsetWidth;
+  ag.style.transition = "";
+}
+let currentStall: string | null = null;
+async function flyCoin(id: string) {
+  const st = stallEl(id), ag = $("agent"), lane = $("lane");
+  if (!st) return;
+  const tag = st.querySelector<HTMLElement>(".tag")!;
+  const x0 = ag.offsetLeft + ag.offsetWidth * 0.95, y0 = ag.offsetTop + ag.offsetHeight * 0.42;
+  const tagBox = tag.getBoundingClientRect(), laneBox = lane.getBoundingClientRect();
+  const x1 = tagBox.left - laneBox.left + tagBox.width / 2, y1 = tagBox.top - laneBox.top + tagBox.height / 2;
+  const c = document.createElement("div");
+  c.className = "flycoin";
+  lane.appendChild(c);
+  const T = 620, t0 = performance.now();
+  await new Promise<void>((done) => {
+    const step = (now: number) => {
+      const k = Math.min(1, (now - t0) / T), e = 1 - Math.pow(1 - k, 2);
+      c.style.left = x0 + (x1 - x0) * e + "px";
+      c.style.top = y0 + (y1 - y0) * e - Math.sin(Math.PI * k) * 90 + "px";
+      c.style.transform = `scale(${1 - k * 0.35}) rotateY(${k * 720}deg)`;
+      k < 1 ? requestAnimationFrame(step) : done();
+    };
+    requestAnimationFrame(step);
+  });
+  c.remove();
+}
+
+// visual events queue, so walking and coins never overlap
+let anim: Promise<void> = Promise.resolve();
+const queue = (fn: () => Promise<void> | void) => (anim = anim.then(fn).catch(() => {}));
+
+// ---------- rendering ----------
 function render() {
   const s = state;
   $("wallet").textContent = `${short(OWNER)} · ${usd(s?.ownerBalance ?? 0)}`;
@@ -99,6 +221,9 @@ function render() {
   $("loading").hidden = true;
   $("onboard").hidden = !!a;
   $("console").hidden = !a;
+  $("pitch").hidden = !!a;
+  $("purse").hidden = !a;
+  renderStreet();
   if (!a) {
     const funded = (s?.ownerBalance ?? 0) > 0;
     $("step1").classList.toggle("done", funded);
@@ -107,48 +232,34 @@ function render() {
     ($("open") as HTMLButtonElement).disabled = !funded;
     return;
   }
-  $("aVault").textContent = usd(a.vault, a.vault < 10 ? 3 : 2);
+  const v = a.vault.toFixed(3).split(".");
+  $("aVault").innerHTML = `$${v[0]}<small>.${v[1]}</small>`;
   ($("aLink") as HTMLAnchorElement).href = a.url;
-  const pct = Math.min(100, (a.spentToday / a.daily) * 100);
-  $("aToday").style.width = pct + "%";
-  $("aTodayTxt").textContent = `${usdFine(a.spentToday)} of ${usd(a.daily)} daily cap used today`;
-  $("aPerCall").textContent = usd(a.perCall, a.perCall < 0.1 ? 3 : 2);
-  $("aTotal").textContent = usdFine(a.totalSpent);
-  $("aCalls").textContent = String(a.calls);
-  $("aExp").textContent = new Date(a.expiresAt * 1000).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-  $("aAgent").textContent = short(s.agent);
-  $("aAgent").title = s.agent;
+  $("aToday").style.width = Math.min(100, (a.spentToday / a.daily) * 100) + "%";
+  $("aTodayTxt").textContent = `${usdFine(a.spentToday)} today`;
+  $("aDaily").textContent = `${usd(a.daily)} a day`;
+  $("aPerCall").textContent = `≤ ${usd(a.perCall, a.perCall < 0.1 ? 3 : 2)} a call`;
+  const shops = s.merchants.filter((m: any) => m.listed && m.budget > 0).length;
+  $("aShops").textContent = `${shops} shop${shops === 1 ? "" : "s"}`;
+  $("aExp").textContent = "till " + new Date(a.expiresAt * 1000).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   const kill = $("pause");
   kill.textContent = a.paused ? "Paused · tap to resume" : "Pause agent";
   kill.classList.toggle("on", a.paused);
-  document.querySelector(".allowance")!.classList.toggle("paused", a.paused);
-
-  $("mRows").innerHTML = s.merchants
-    .map((m: any) => {
-      const p = m.budget ? Math.min(100, (m.spent / m.budget) * 100) : 0;
-      return `<div class="mrow ${m.listed && m.budget > 0 ? "" : "off"}" data-id="${m.id}">
-        <div class="top2"><span>${esc(m.name)}</span><span class="mono">${usdFine(m.spent)} / ${m.listed ? usd(m.budget) : "not allowed"}</span></div>
-        <div class="bar"><div style="width:${p}%"></div></div>
-      </div>`;
-    })
-    .join("");
 
   const paid = s.receipts.filter((r: any) => r.kind === "paid");
   const tape = $("tape");
-  // one line per owner transaction: "Allowance opened · 7 merchants" instead of eight lines
+  // one line per owner transaction: "Allowance opened · 7 shops" instead of eight lines
   const lines: any[] = [];
   for (const r of s.receipts) {
     if (r.kind === "merchantSet") {
       const host = lines.find((x) => x.sig === r.sig && x.kind !== "paid");
       if (host) { host.merchants = (host.merchants ?? 0) + 1; continue; }
-      const prev = lines.find((x) => x.kind === "merchantSet" && x.sig === r.sig);
-      if (prev) { prev.merchants = (prev.merchants ?? 1) + 1; continue; }
       lines.push({ ...r, merchants: 1 });
       continue;
     }
     if (r.kind === "opened") {
       const kids = lines.filter((x) => x.kind === "merchantSet" && Math.abs(x.time - r.time) <= 20);
-      const n = kids.reduce((a, x) => a + x.merchants, 0);
+      const n = kids.reduce((acc, x) => acc + x.merchants, 0);
       for (const k of kids) lines.splice(lines.indexOf(k), 1);
       lines.push({ ...r, merchants: n });
       continue;
@@ -159,12 +270,12 @@ function render() {
   else
     tape.innerHTML = lines
       .map((r: any) => {
-        const isNew = !seenReceipts.has(r.sig + r.kind);
+        const isNew = seenReceipts.size > 0 && !seenReceipts.has(r.sig + r.kind);
         const t = r.time ? new Date(r.time * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "";
         if (r.kind === "paid")
-          return `<div class="tline ${isNew ? "new" : ""}"><div class="a"><span>#${r.call} ${esc(r.name)}</span><span>${usdFine(r.amount)}</span></div>
+          return `<div class="tline ${isNew ? "new" : ""}"><div class="a"><span><i class="dot"></i>#${r.call} ${esc(r.name)}</span><span>${usdFine(r.amount)}</span></div>
             <div class="b"><span>${t} · ref ${r.reference.slice(0, 8)}</span><a href="${r.url}" target="_blank" rel="noopener">${short(r.sig, 5)} ↗</a></div></div>`;
-        const label: Record<string, string> = { opened: r.merchants ? `Allowance opened · ${r.merchants} merchants` : "Allowance opened", merchantSet: r.merchants > 1 ? `${r.merchants} merchant budgets set` : "Merchant budget set", pausedSet: r.data?.paused ? "Paused by owner" : "Resumed by owner", toppedUp: "Topped up", withdrawn: "Withdrawn", limitsSet: "Caps changed", closed: "Closed" };
+        const label: Record<string, string> = { opened: r.merchants ? `Allowance opened · ${r.merchants} shops` : "Allowance opened", merchantSet: r.merchants > 1 ? `${r.merchants} shop budgets set` : "Shop budget set", pausedSet: r.data?.paused ? "Paused by owner" : "Resumed by owner", toppedUp: "Topped up", withdrawn: "Withdrawn", limitsSet: "Caps changed", closed: "Closed" };
         const amt = r.kind === "opened" || r.kind === "toppedUp" || r.kind === "withdrawn" ? usd(Number(r.data?.amount ?? 0) / 1e6) : r.kind === "merchantSet" && r.merchants === 1 ? usd(Number(r.data?.budget ?? 0) / 1e6) : "";
         return `<div class="tline sys ${isNew ? "new" : ""}"><div class="a"><span>${label[r.kind] ?? r.kind}</span><span>${amt}</span></div>
           <div class="b"><span>${t}</span><a href="${r.url}" target="_blank" rel="noopener">${short(r.sig, 5)} ↗</a></div></div>`;
@@ -192,8 +303,8 @@ async function refresh() {
 
 // ---------- agent run ----------
 const CHIPS = [
-  "I hold 2 SOL and I'm in Lagos. What is it worth in naira, and will it rain here this weekend?",
   "Brief me on Solana: what it is, its price, and the latest headlines. Get the premium dossier too.",
+  "I hold 2 SOL and I'm in Lagos. What is it worth in naira, and will it rain here this weekend?",
   "Compare today's weather in Nairobi and Accra, and convert $50 to KES and GHS.",
 ];
 
@@ -214,11 +325,15 @@ async function run(prompt: string) {
   const send = $("send") as HTMLButtonElement;
   send.disabled = true;
   send.classList.add("busy");
+  runMarks.clear();
+  renderStreet();
   feedAdd(`<div class="msg user">${esc(prompt)}</div>`);
   const buys = new Map<string, HTMLElement>();
+  const merchantOf = new Map<string, string>();
   const ts = Date.now();
   const sig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(`kobo:run:${OWNER}:${ts}`), owner.secretKey));
   const poll = setInterval(refresh, 2500);
+  if (!state?.allowance?.paused) { pose("idle"); say("thinking…"); }
   try {
     const r = await fetch("/api/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner: OWNER, prompt, ts, sig }) });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? `HTTP ${r.status}`);
@@ -237,50 +352,93 @@ async function run(prompt: string) {
         if (!line) continue;
         const e = JSON.parse(line.slice(5));
         const el = buys.get(e.id);
+        const mid = merchantOf.get(e.id) ?? "";
         const step = (k: string, cls: string) => el?.querySelector(`[data-s="${k}"]`)?.classList.add(cls);
         switch (e.type) {
           case "text":
-            feedAdd(`<div class="msg bot">${md(e.text)}</div>`);
+            queue(() => { feedAdd(`<div class="msg bot">${md(e.text)}</div>`); });
             break;
           case "note":
             feedAdd(`<div class="note">${md(e.text)}</div>`);
             break;
           case "call":
+            merchantOf.set(e.id, e.merchant);
             buys.set(
               e.id,
-              feedAdd(`<div class="buy"><div class="h"><b>${esc(e.name)}</b><span class="mono">${usdFine(e.price)}</span></div>
+              feedAdd(`<div class="buy"><img src="${art(e.merchant)}" alt="" /><div class="bd"><div class="h"><b>${esc(e.name)}</b><span>${usdFine(e.price)}</span></div>
                 <div class="in">${esc(JSON.stringify(e.input))}</div>
-                <div class="steps"><span data-s="req" class="on">request</span><span data-s="402">402 · pay ${usdFine(e.price)}</span><span data-s="sig">agent signs</span><span data-s="set">settled on Solana</span></div></div>`),
+                <div class="steps"><span data-s="req" class="on">request</span><span data-s="402">402 · pay ${usdFine(e.price)}</span><span data-s="sig">agent signs</span><span data-s="set">settles on Solana</span></div></div></div>`),
             );
+            queue(async () => {
+              currentStall = e.merchant;
+              runMarks.set(e.merchant, { cls: "calling" });
+              renderStreet();
+              say(null);
+              if (!state?.allowance?.paused) pose("idle");
+              await walkTo(e.merchant);
+              say(`402 · ${usdFine(e.price)}`);
+            });
             break;
           case "402":
             step("402", "on");
             break;
           case "signed":
             step("sig", "on");
+            queue(() => { if (!state?.allowance?.paused) pose("pay"); say("signing…"); });
             break;
           case "paid":
             step("402", "ok");
             step("sig", "ok");
             step("set", "ok");
-            el?.insertAdjacentHTML("beforeend", `<a class="tx" href="${e.url}" target="_blank" rel="noopener">paid ${usdFine(e.amount)} · ${short(e.sig, 6)} · ${e.ms} ms ↗</a>`);
+            { const x = el?.querySelector('[data-s="set"]'); if (x) x.textContent = "settled on Solana"; }
+            el?.classList.add("good");
+            el?.querySelector(".bd")?.insertAdjacentHTML("beforeend", `<a class="tx" href="${e.url}" target="_blank" rel="noopener">paid ${usdFine(e.amount)} · ${short(e.sig, 6)} · ${e.ms} ms ↗</a>`);
+            queue(async () => {
+              pose("pay");
+              await flyCoin(mid);
+              runMarks.set(mid, { cls: "paid" });
+              renderStreet();
+              say(`paid in ${(e.ms / 1000).toFixed(1)} s`, "ok");
+              await wait(500);
+            });
             refresh();
             break;
           case "refused":
             step("set", "no");
             { const x = el?.querySelector('[data-s="set"]'); if (x) x.textContent = "refused on chain"; }
-            el?.insertAdjacentHTML("beforeend", `<div class="why">Refused by the allowance: ${esc(e.reason)}. Not charged.</div>`);
+            el?.classList.add("bad");
+            el?.querySelector(".bd")?.insertAdjacentHTML("beforeend", `<div class="why">Refused by the allowance: ${esc(e.reason)}. Not charged.</div>`);
+            queue(async () => {
+              runMarks.set(mid, { cls: "no", note: shortWhy(e.reason) });
+              renderStreet();
+              pose(state?.allowance?.paused ? "sleep" : "no");
+              say(`refused · ${shortWhy(e.reason)}`, "no");
+              await wait(1100);
+            });
             break;
           case "failed":
             step("set", "no");
             { const x = el?.querySelector('[data-s="set"]'); if (x) x.textContent = "not charged"; }
-            el?.insertAdjacentHTML("beforeend", `<div class="why">${esc(e.reason)}</div>`);
+            el?.classList.add("bad");
+            el?.querySelector(".bd")?.insertAdjacentHTML("beforeend", `<div class="why">${esc(e.reason)}</div>`);
+            queue(async () => {
+              runMarks.set(mid, { cls: "no", note: "failed · not charged" });
+              renderStreet();
+              say("tool failed · not charged", "no");
+              await wait(800);
+            });
             break;
           case "error":
             feedAdd(`<div class="msg err">${esc(e.message)}</div>`);
             break;
           case "done":
-            feedAdd(`<div class="summary">${e.calls} paid call${e.calls === 1 ? "" : "s"} · ${usdFine(e.spent)} spent${e.refused ? ` · ${e.refused} refused by the allowance` : ""}</div>`);
+            queue(async () => {
+              feedAdd(`<div class="summary">${e.calls} paid call${e.calls === 1 ? "" : "s"} · ${usdFine(e.spent)} spent${e.refused ? ` · ${e.refused} refused by the allowance` : ""}</div>`);
+              say(null);
+              currentStall = null;
+              pose(state?.allowance?.paused ? "sleep" : "idle");
+              await walkTo(null);
+            });
             break;
         }
       }
@@ -289,6 +447,8 @@ async function run(prompt: string) {
     feedAdd(`<div class="msg err">${esc(String(e?.message ?? e))}</div>`);
   } finally {
     clearInterval(poll);
+    await anim;
+    say(null);
     running = false;
     send.disabled = false;
     send.classList.remove("busy");
@@ -299,11 +459,13 @@ async function run(prompt: string) {
 // ---------- wiring ----------
 async function main() {
   cfg = await api("/api/config");
-  $("model").textContent = `${cfg.model} · ${cfg.merchants.length} paid tools`;
+  $("model").textContent = `${cfg.model} · ${cfg.merchants.length} paid APIs · x402 on Solana devnet`;
   const pl = $("progLink") as HTMLAnchorElement;
   pl.textContent = short(cfg.program, 6);
   pl.href = `https://explorer.solana.com/address/${cfg.program}?cluster=devnet`;
-  renderSetup();
+  buildStalls();
+  placeAgent();
+  addEventListener("resize", placeAgent);
   $("chips").innerHTML = CHIPS.map((c) => `<button class="chip" type="button">${esc(c)}</button>`).join("");
   $("chips").addEventListener("click", (ev) => {
     const b = (ev.target as HTMLElement).closest(".chip");
@@ -322,10 +484,11 @@ async function main() {
   $("open").onclick = () =>
     busy($("open"), async () => {
       const merchants: Record<string, number> = {};
-      document.querySelectorAll<HTMLInputElement>("[data-m]").forEach((cb) => {
-        const b = document.querySelector<HTMLInputElement>(`[data-b="${cb.dataset.m}"]`);
-        if (cb.checked) merchants[cb.dataset.m!] = Number(b?.value) || 0;
-      });
+      for (const m of cfg.merchants) {
+        if (offSetup.has(m.id)) continue;
+        const b = document.querySelector<HTMLInputElement>(`[data-b="${m.id}"]`);
+        merchants[m.id] = Number(b?.value) || 0;
+      }
       await act("open", {
         amount: Number(($("fAmount") as HTMLInputElement).value),
         perCall: Number(($("fPerCall") as HTMLInputElement).value),
@@ -350,14 +513,6 @@ async function main() {
     if (day === null) return;
     busy($("limits"), () => act("limits", { perCall: Number(per), daily: Number(day) }));
   };
-  $("mRows").addEventListener("click", (ev) => {
-    const row = (ev.target as HTMLElement).closest<HTMLElement>(".mrow");
-    if (!row) return;
-    const m = state.merchants.find((x: any) => x.id === row.dataset.id);
-    const v = prompt(`Budget for ${m.name} ($, 0 blocks it)`, String(m.budget));
-    if (v === null) return;
-    act("merchant", { id: m.id, budget: Number(v) }).catch((e) => toast(esc(String(e.message))));
-  });
   $("ask").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const p = ($("prompt") as HTMLTextAreaElement).value;
@@ -371,6 +526,7 @@ async function main() {
     }
   });
   await refresh();
+  placeAgent();
   setInterval(() => !running && document.visibilityState === "visible" && refresh(), 8000);
 }
 main();
