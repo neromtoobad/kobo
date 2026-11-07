@@ -135,17 +135,37 @@ function render() {
 
   const paid = s.receipts.filter((r: any) => r.kind === "paid");
   const tape = $("tape");
-  if (!s.receipts.length) tape.innerHTML = `<div class="tape-empty">No receipts yet</div>`;
+  // one line per owner transaction: "Allowance opened · 7 merchants" instead of eight lines
+  const lines: any[] = [];
+  for (const r of s.receipts) {
+    if (r.kind === "merchantSet") {
+      const host = lines.find((x) => x.sig === r.sig && x.kind !== "paid");
+      if (host) { host.merchants = (host.merchants ?? 0) + 1; continue; }
+      const prev = lines.find((x) => x.kind === "merchantSet" && x.sig === r.sig);
+      if (prev) { prev.merchants = (prev.merchants ?? 1) + 1; continue; }
+      lines.push({ ...r, merchants: 1 });
+      continue;
+    }
+    if (r.kind === "opened") {
+      const kids = lines.filter((x) => x.kind === "merchantSet" && Math.abs(x.time - r.time) <= 20);
+      const n = kids.reduce((a, x) => a + x.merchants, 0);
+      for (const k of kids) lines.splice(lines.indexOf(k), 1);
+      lines.push({ ...r, merchants: n });
+      continue;
+    }
+    lines.push(r);
+  }
+  if (!lines.length) tape.innerHTML = `<div class="tape-empty">No receipts yet</div>`;
   else
-    tape.innerHTML = s.receipts
+    tape.innerHTML = lines
       .map((r: any) => {
         const isNew = !seenReceipts.has(r.sig + r.kind);
         const t = r.time ? new Date(r.time * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "";
         if (r.kind === "paid")
           return `<div class="tline ${isNew ? "new" : ""}"><div class="a"><span>#${r.call} ${esc(r.name)}</span><span>${usdFine(r.amount)}</span></div>
             <div class="b"><span>${t} · ref ${r.reference.slice(0, 8)}</span><a href="${r.url}" target="_blank" rel="noopener">${short(r.sig, 5)} ↗</a></div></div>`;
-        const label: Record<string, string> = { opened: "Allowance opened", merchantSet: "Merchant budget set", pausedSet: r.data?.paused ? "Paused by owner" : "Resumed by owner", toppedUp: "Topped up", withdrawn: "Withdrawn", limitsSet: "Caps changed", closed: "Closed" };
-        const amt = r.data?.amount ? usd(Number(r.data.amount) / 1e6) : r.data?.budget ? usd(Number(r.data.budget) / 1e6) : "";
+        const label: Record<string, string> = { opened: r.merchants ? `Allowance opened · ${r.merchants} merchants` : "Allowance opened", merchantSet: r.merchants > 1 ? `${r.merchants} merchant budgets set` : "Merchant budget set", pausedSet: r.data?.paused ? "Paused by owner" : "Resumed by owner", toppedUp: "Topped up", withdrawn: "Withdrawn", limitsSet: "Caps changed", closed: "Closed" };
+        const amt = r.kind === "opened" || r.kind === "toppedUp" || r.kind === "withdrawn" ? usd(Number(r.data?.amount ?? 0) / 1e6) : r.kind === "merchantSet" && r.merchants === 1 ? usd(Number(r.data?.budget ?? 0) / 1e6) : "";
         return `<div class="tline sys ${isNew ? "new" : ""}"><div class="a"><span>${label[r.kind] ?? r.kind}</span><span>${amt}</span></div>
           <div class="b"><span>${t}</span><a href="${r.url}" target="_blank" rel="noopener">${short(r.sig, 5)} ↗</a></div></div>`;
       })
@@ -222,6 +242,9 @@ async function run(prompt: string) {
           case "text":
             feedAdd(`<div class="msg bot">${md(e.text)}</div>`);
             break;
+          case "note":
+            feedAdd(`<div class="note">${md(e.text)}</div>`);
+            break;
           case "call":
             buys.set(
               e.id,
@@ -245,10 +268,12 @@ async function run(prompt: string) {
             break;
           case "refused":
             step("set", "no");
+            { const x = el?.querySelector('[data-s="set"]'); if (x) x.textContent = "refused on chain"; }
             el?.insertAdjacentHTML("beforeend", `<div class="why">Refused by the allowance: ${esc(e.reason)}. Not charged.</div>`);
             break;
           case "failed":
             step("set", "no");
+            { const x = el?.querySelector('[data-s="set"]'); if (x) x.textContent = "not charged"; }
             el?.insertAdjacentHTML("beforeend", `<div class="why">${esc(e.reason)}</div>`);
             break;
           case "error":

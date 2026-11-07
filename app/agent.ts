@@ -19,6 +19,7 @@ Every tool is a separate paid API. Each call is charged to the allowance, and th
 
 export type AgentEvent =
   | { type: "text"; text: string }
+  | { type: "note"; text: string }
   | { type: "call"; id: string; merchant: string; name: string; input: unknown; price: number }
   | { type: "402"; id: string; amount: number; payTo: string; reference: string }
   | { type: "signed"; id: string }
@@ -44,7 +45,8 @@ export async function runAgent(prompt: string, agent: Keypair, base: string, emi
       messages,
     } as any);
     messages.push({ role: "assistant", content: res.content });
-    for (const b of res.content) if (b.type === "text" && b.text.trim()) emit({ type: "text", text: b.text });
+    const midTurn = res.stop_reason === "tool_use";
+    for (const b of res.content) if (b.type === "text" && b.text.trim()) emit({ type: midTurn ? "note" : "text", text: b.text });
     if (res.stop_reason === "refusal") {
       emit({ type: "error", message: "The model declined this request." });
       break;
