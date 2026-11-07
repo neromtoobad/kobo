@@ -1,0 +1,37 @@
+{
+  "name": "kobo",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test:local": "ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 ANCHOR_WALLET=$HOME/.kobo-deployer.json npx ts-mocha -p ./tsconfig.json -t 1000000 tests/kobo.ts",
+    "validator": "solana-test-validator --reset --quiet --bpf-program 2wh8evQ1cAmw3Ykcq5CY1cuTzNp9iFyW9pj7nedEHyVw target/deploy/kobo.so",
+    "idl": "mkdir -p app/idl && cp target/idl/kobo.json app/idl/kobo.json",
+    "web:build": "esbuild app/web/src/main.ts --bundle --format=esm --platform=browser --target=es2020 --minify --outfile=app/web/main.js --define:global=globalThis",
+    "app": "npm run web:build && tsx app/server.ts",
+    "start": "tsx app/server.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "@coral-xyz/anchor": "^0.32.1",
+    "@hono/node-server": "^2.1.6",
+    "@solana/spl-token": "^0.4.15",
+    "@solana/web3.js": "^1.99.0",
+    "bs58": "^6.0.0",
+    "hono": "^4.13.17",
+    "tsx": "^4.23.15",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.20",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^26.6.6",
+    "chai": "^4.5.0",
+    "esbuild": "^0.28.2",
+    "mocha": "^11.8.0",
+    "ts-mocha": "^11.1.0",
+    "typescript": "^5.9.3"
+  }
+}

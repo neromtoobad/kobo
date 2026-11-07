@@ -1,0 +1,19 @@
+[toolchain]
+anchor_version = "1.0.2"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+kobo = "2wh8evQ1cAmw3Ykcq5CY1cuTzNp9iFyW9pj7nedEHyVw"
+
+[programs.devnet]
+kobo = "2wh8evQ1cAmw3Ykcq5CY1cuTzNp9iFyW9pj7nedEHyVw"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
