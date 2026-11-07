@@ -211,7 +211,7 @@ const receiptCache = new Map<string, any>(); // signature -> parsed receipt (imm
 const nameByWallet = Object.fromEntries(MERCHANTS.map((m) => [devnet.merchants[m.id], m]));
 
 async function receipts(allowance: PublicKey, limit = 30) {
-  const sigs = await conn.getSignaturesForAddress(allowance, { limit }, "confirmed");
+  const sigs = (await conn.getSignaturesForAddress(allowance, { limit }, "confirmed")).sort((a, b) => (b.slot - a.slot) || ((b.blockTime ?? 0) - (a.blockTime ?? 0)));
   const todo = sigs.filter((s) => !s.err && !receiptCache.has(s.signature)).map((s) => s.signature);
   for (let i = 0; i < todo.length; i += 10) {
     const txs = await conn.getTransactions(todo.slice(i, i + 10), { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
@@ -231,11 +231,13 @@ async function receipts(allowance: PublicKey, limit = 30) {
         const m = nameByWallet[d.merchant.toBase58()];
         out.push({ kind: "paid", sig: s.signature, url: explorer(s.signature), time: r.time, fee: r.fee, merchant: m?.id ?? d.merchant.toBase58(), name: m?.name ?? "unknown", amount: fromUnits(d.amount), call: Number(d.call), reference: Buffer.from(d.reference).toString("hex") });
       } else {
-        out.push({ kind: e.name, sig: s.signature, url: explorer(s.signature), time: r.time, data: JSON.parse(JSON.stringify(d, (_k, v) => (v instanceof PublicKey ? v.toBase58() : BN.isBN(v) ? v.toString() : v))) });
+        const data: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(d)) data[k] = v instanceof PublicKey ? v.toBase58() : BN.isBN(v) ? (v as BN).toString() : v;
+        out.push({ kind: e.name, sig: s.signature, url: explorer(s.signature), time: r.time, data });
       }
     }
   }
-  return out;
+  return out.sort((a, b) => (b.time - a.time) || ((b.call ?? 0) - (a.call ?? 0)));
 }
 
 app.get("/api/state", async (c) => {
