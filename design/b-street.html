@@ -1,0 +1,75 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter+Tight:wght@400;500;600&family=DM+Mono:wght@400;500&display=block" rel="stylesheet">
+<style>
+:root{--ink:#22180F;--mute:rgba(34,24,15,.55);--line:rgba(34,24,15,.1);--terra:#C8643E;--cream:#FBF4E8;--sage:#5E7F5A;--green:#2F7D4E;--red:#C0392B;--sky:#F6E6CF}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1600px;height:900px;overflow:hidden;background:var(--cream);font:400 15px/1.45 "Inter Tight";color:var(--ink)}
+.top{position:absolute;left:0;right:0;top:0;height:64px;display:flex;align-items:center;padding:0 28px;gap:12px;z-index:5}
+.logo{font:800 26px "Bricolage Grotesque";letter-spacing:-.03em;display:flex;align-items:center;gap:8px}
+.logo i{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F3B583,#C0652F 60%,#8A4520);box-shadow:0 2px 0 #6d3517}
+.sp{flex:1}.pill{font:500 13px "DM Mono";background:#fff;border-radius:99px;padding:8px 14px;box-shadow:0 1px 0 var(--line)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:7px;vertical-align:1px}
+.street{position:absolute;left:0;right:0;top:0;height:470px;background:linear-gradient(#F7E7CF,#F3DCBC 70%);overflow:hidden}
+.sun{position:absolute;right:220px;top:60px;width:160px;height:160px;border-radius:50%;background:radial-gradient(#FFE2B0,#F6C98A 70%,transparent 71%);opacity:.7}
+.ground{position:absolute;left:0;right:0;bottom:0;height:120px;background:#E7C9A2;border-top:3px solid #D9B587}
+.ground:after{content:"";position:absolute;left:0;right:0;top:46px;height:2px;background:repeating-linear-gradient(90deg,#d4ad7e 0 40px,transparent 40px 80px)}
+.stall{position:absolute;bottom:92px;width:150px;text-align:center}
+.stall img{width:150px;height:190px;object-fit:contain;object-position:bottom}
+.tag{position:absolute;left:50%;top:-30px;transform:translateX(-50%) rotate(-3deg);background:#fff;border-radius:10px;padding:5px 10px;font:500 13px "DM Mono";box-shadow:0 3px 0 var(--line);white-space:nowrap}
+.tag b{display:block;font:700 13px "Bricolage Grotesque";letter-spacing:-.01em}
+.stall.paid .tag{background:var(--green);color:#fff;box-shadow:0 3px 0 #1d5534}
+.stall.no .tag{background:var(--red);color:#fff;box-shadow:0 3px 0 #8a2a1f;transform:translateX(-50%) rotate(3deg)}
+.rope{position:absolute;bottom:4px;left:6px;right:6px;height:20px;border-bottom:4px solid var(--red);border-radius:0 0 50% 50%}
+.agent{position:absolute;bottom:60px;width:150px;filter:drop-shadow(0 18px 12px rgba(80,40,10,.25))}
+.coinfly{position:absolute;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F3B583,#C0652F 60%,#8A4520);box-shadow:0 2px 0 #6d3517}
+.arc{position:absolute;border:3px dashed rgba(192,101,47,.5);border-color:rgba(192,101,47,.5) transparent transparent transparent;border-radius:50%}
+.purse{position:absolute;left:28px;top:96px;width:330px;background:#fff;border-radius:24px;padding:20px 22px;box-shadow:0 6px 0 rgba(34,24,15,.08)}
+.lab{font:500 11px "DM Mono";letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.big{font:800 64px/1 "Bricolage Grotesque";letter-spacing:-.045em;margin-top:6px}.big small{font-size:.48em;color:var(--mute);letter-spacing:-.02em}
+.meter{height:12px;border-radius:6px;background:#F1E6D6;margin-top:14px;position:relative;overflow:hidden}.meter i{position:absolute;left:0;top:0;bottom:0;width:2%;background:var(--terra);border-radius:6px}
+.mt{display:flex;justify-content:space-between;font:500 12px "DM Mono";color:var(--mute);margin-top:6px}
+.rules{display:flex;gap:6px;margin-top:14px}.rules span{font:600 12px "Inter Tight";background:#F6EEE2;border-radius:99px;padding:6px 10px}
+.kill{margin-top:14px;width:100%;border:0;border-radius:14px;background:var(--ink);color:#fff;font:700 16px "Bricolage Grotesque";padding:13px;box-shadow:0 4px 0 #000}
+.low{position:absolute;left:28px;right:28px;top:494px;bottom:24px;display:grid;grid-template-columns:1fr 430px;gap:18px}
+.chat{background:#fff;border-radius:24px;padding:18px 20px;display:flex;flex-direction:column;box-shadow:0 6px 0 rgba(34,24,15,.06)}
+.you{font:700 19px/1.25 "Bricolage Grotesque";letter-spacing:-.015em}
+.ans{margin-top:10px;font-size:14.5px;color:#3b2f24;flex:1}.ans p+p{margin-top:6px}.ans strong{color:var(--ink)}
+.ask{display:flex;gap:10px;align-items:center;background:#F6EEE2;border-radius:16px;padding:6px 6px 6px 16px;color:var(--mute)}
+.ask button{margin-left:auto;border:0;border-radius:12px;background:var(--terra);color:#fff;font:700 15px "Bricolage Grotesque";padding:10px 18px;box-shadow:0 3px 0 #8a4520}
+.tape{background:#FFFEFA;border-radius:6px;padding:16px 20px;font:400 12.5px "DM Mono";position:relative;box-shadow:0 6px 0 rgba(34,24,15,.06);
+ -webkit-mask:radial-gradient(circle 6px at 50% 0,transparent 98%,#000) 0 0/16px 100% repeat-x}
+.tape h4{font:700 18px "Bricolage Grotesque";text-align:center}
+.r{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line)}
+.r .s{color:var(--mute);font-size:11px}.r.x{color:var(--red)}
+.tt{display:flex;justify-content:space-between;margin-top:8px;font-weight:500}
+</style></head><body>
+<div class="street"><div class="sun"></div><div class="ground"></div>
+ <div class="stall" style="left:420px"><div class="tag"><b>Weather</b>$0.002</div><img src="art/stall-1.webp"></div>
+ <div class="stall" style="left:575px"><div class="tag"><b>Naira FX</b>$0.001</div><img src="art/stall-2.webp"></div>
+ <div class="stall paid" style="left:730px"><div class="tag"><b>Ticker ✓</b>$0.001</div><img src="art/stall-3.webp"></div>
+ <div class="stall paid" style="left:885px"><div class="tag"><b>Encyclo ✓</b>$0.002</div><img src="art/stall-4.webp"></div>
+ <div class="stall paid" style="left:1040px"><div class="tag"><b>Wire ✓</b>$0.003</div><img src="art/stall-5.webp"></div>
+ <div class="stall" style="left:1195px"><div class="tag"><b>2nd opinion</b>$0.020</div><img src="art/stall-6.webp"></div>
+ <div class="stall no" style="left:1370px"><div class="tag"><b>Dossier ✕ over cap</b>$0.250</div><img src="art/stall-7.webp"><div class="rope"></div></div>
+ <div class="arc" style="left:930px;top:250px;width:180px;height:90px"></div>
+ <div class="coinfly" style="left:1060px;top:258px"></div>
+ <img class="agent" src="art/agent-2.webp" style="left:880px">
+</div>
+<div class="top"><div class="logo"><i></i>kobo</div><div class="sp"></div><span class="pill"><span class="dot"></span>Solana devnet</span><span class="pill">eHqr…rhJ6 · $3.00</span></div>
+<div class="purse"><div class="lab">Pocket money · on chain ↗</div><div class="big">$1<small>.994</small></div>
+ <div class="meter"><i></i></div><div class="mt"><span>$0.006 today</span><span>$1.00 a day</span></div>
+ <div class="rules"><span>≤ $0.05 a call</span><span>7 shops</span><span>till 8 Nov</span></div>
+ <button class="kill">Pause agent</button></div>
+<div class="low">
+ <div class="chat"><div class="lab">You asked</div><div class="you">Brief me on Solana: what it is, its price, and the latest headlines. Get the premium dossier too.</div>
+  <div class="ans"><p><strong>Price:</strong> SOL is $88.96 on Kraken, down 1.2% on the day. <strong>What it is:</strong> a proof-of-stake chain for smart contracts, live since March 2020.</p>
+  <p><strong>Dossier:</strong> your allowance refused it, $0.25 is over your $0.05 cap. You weren't charged; I bought the summary and headlines for $0.005 instead.</p></div>
+  <div class="ask">Send your agent shopping…<button>Run</button></div></div>
+ <div class="tape"><h4>Receipts</h4><div style="text-align:center;color:var(--mute);font-size:11px;margin-bottom:6px">Paid events read back from Solana</div>
+  <div class="r"><span>#3 Wire <span class="s">22:40:11 ↗</span></span><span>$0.003</span></div>
+  <div class="r"><span>#2 Encyclo <span class="s">22:40:08 ↗</span></span><span>$0.002</span></div>
+  <div class="r"><span>#1 Ticker <span class="s">22:40:05 ↗</span></span><span>$0.001</span></div>
+  <div class="r x"><span>Dossier Pro <span class="s">refused</span></span><span><s>$0.250</s></span></div>
+  <div class="tt"><span>Spent</span><span>$0.006</span></div></div>
+</div></body></html>

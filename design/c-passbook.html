@@ -1,0 +1,81 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=block" rel="stylesheet">
+<style>
+:root{--desk:#2B3A31;--paper:#F8F3E8;--ink:#1F2421;--mute:rgba(31,36,33,.55);--rule:rgba(31,36,33,.12);--cu:#B6612C;--green:#2C7A4B;--red:#B3322A;--cover:#1E3A2B}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1600px;height:900px;overflow:hidden;background:radial-gradient(1200px 700px at 50% 40%,#E9E4D8,#D9D2C2);font:400 15px/1.45 "Instrument Sans";color:var(--ink)}
+.top{height:64px;display:flex;align-items:center;padding:0 30px;gap:12px}
+.logo{font:500 26px "Newsreader";letter-spacing:-.02em;display:flex;gap:9px;align-items:center}
+.logo i{width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F0B27E,#B6612C 60%,#8A4520)}
+.sp{flex:1}.pill{font:500 12.5px "IBM Plex Mono";background:rgba(255,255,255,.7);border-radius:99px;padding:7px 13px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:7px}
+.book{position:absolute;left:120px;top:84px;width:1160px;height:770px;background:var(--cover);border-radius:22px;padding:14px;box-shadow:0 40px 80px -30px rgba(20,30,20,.55)}
+.pages{display:grid;grid-template-columns:1fr 1fr;height:100%;border-radius:12px;overflow:hidden;background:var(--paper);position:relative}
+.pages:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:40px;margin-left:-20px;background:linear-gradient(90deg,transparent,rgba(0,0,0,.08),transparent)}
+.pg{padding:34px 40px;position:relative;background-image:repeating-linear-gradient(transparent 0 35px,var(--rule) 35px 36px)}
+.ey{font:500 11px "IBM Plex Mono";letter-spacing:.1em;text-transform:uppercase;color:var(--cu)}
+h2{font:400 34px/1.1 "Newsreader";letter-spacing:-.015em;margin-top:6px}
+.bal{font:400 92px/1 "Newsreader";letter-spacing:-.04em;margin-top:24px}.bal small{font-size:.45em;color:var(--mute)}
+.terms{margin-top:22px;font-size:15px}
+.t{display:flex;justify-content:space-between;align-items:baseline;height:36px;border-bottom:1px dotted var(--rule)}
+.t b{font:500 15px "IBM Plex Mono"}
+.sig{position:absolute;left:40px;right:40px;bottom:30px;display:flex;justify-content:space-between;align-items:flex-end}
+.sig .line{border-top:1px solid var(--ink);width:210px;padding-top:6px;font:500 11px "IBM Plex Mono";color:var(--mute)}
+.sig .hand{font:italic 400 26px "Newsreader";margin-bottom:2px}
+.stampbox{width:150px;height:96px;border:2px dashed var(--rule);border-radius:10px;display:grid;place-items:center}
+.stamp{font:600 14px "IBM Plex Mono";letter-spacing:.12em;border:3px solid;border-radius:8px;padding:6px 12px;transform:rotate(-8deg);opacity:.85}
+.stamp.g{color:var(--green)}.stamp.r{color:var(--red)}
+.ledger{margin-top:18px;font:400 13px "IBM Plex Mono"}
+.lh,.lr{display:grid;grid-template-columns:62px 1fr 74px 110px;align-items:center;height:36px}
+.lh{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.lr .m{font:500 14px "Instrument Sans"}.lr .m span{display:block;font:400 10.5px "IBM Plex Mono";color:var(--mute);margin-top:-2px}
+.lr .a{text-align:right;font-weight:500}
+.lr .st{display:flex;justify-content:flex-end}.lr .st .stamp{font-size:10px;padding:2px 7px;border-width:2px}
+.lr.x .a{color:var(--red);text-decoration:line-through}
+.carry{display:flex;justify-content:space-between;margin-top:10px;font:500 14px "IBM Plex Mono";border-top:2px solid var(--ink);padding-top:8px}
+.agent{position:absolute;right:58px;top:96px;width:300px}
+.agent img{width:150px;display:block;margin:0 auto -8px;filter:drop-shadow(0 20px 18px rgba(0,0,0,.25))}
+.card{background:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 20px 40px -24px rgba(0,0,0,.35)}
+.card .q{font:500 16px/1.3 "Newsreader"}
+.card .a{margin-top:10px;font-size:13.5px;color:#3a403c}
+.card .a p+p{margin-top:6px}
+.chips{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.chip{display:flex;justify-content:space-between;font:500 12px "IBM Plex Mono";background:#F4F1EA;border-radius:10px;padding:7px 10px}
+.chip.x{background:#FBEDEB;color:var(--red)}
+.inp{margin-top:12px;background:var(--desk);color:#cfd8d2;border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;font-size:13px}
+.inp b{color:#fff}
+.pause{margin-top:10px;width:100%;border:2px solid var(--red);background:transparent;color:var(--red);border-radius:14px;padding:11px;font:600 14px "Instrument Sans"}
+</style></head><body>
+<div class="top"><div class="logo"><i></i>Kobo</div><div class="sp"></div><span class="pill"><span class="dot"></span>Solana devnet</span><span class="pill">eHqr…rhJ6 · $3.00</span></div>
+<div class="book"><div class="pages">
+ <div class="pg"><div class="ey">Allowance book · No. e4NR</div><h2>Pocket money for<br>your agent</h2>
+  <div class="bal">$1<small>.994</small></div><div style="color:var(--mute);margin-top:4px">left in the vault, of $2.00</div>
+  <div class="terms">
+   <div class="t"><span>Most it may pay per call</span><b>$0.050</b></div>
+   <div class="t"><span>Most it may spend per day</span><b>$1.000</b></div>
+   <div class="t"><span>Spent today</span><b>$0.006</b></div>
+   <div class="t"><span>Shops it may pay</span><b>7</b></div>
+   <div class="t"><span>Valid until</span><b>8 Nov · 22:39</b></div>
+  </div>
+  <div class="sig"><div><div class="hand">eHqr…rhJ6</div><div class="line">Owner, signed on Solana</div></div><div class="stampbox"><span class="stamp g">ACTIVE</span></div></div>
+ </div>
+ <div class="pg"><div class="ey">Ledger · read back from chain</div><h2>Receipts</h2>
+  <div class="ledger">
+   <div class="lh"><span>Time</span><span>Shop</span><span style="text-align:right">Amount</span><span style="text-align:right">Status</span></div>
+   <div class="lr"><span>22:39</span><span class="m">Allowance opened<span>5jn5…q4x2T ↗</span></span><span class="a">$2.000</span><span class="st"><span class="stamp g">FUNDED</span></span></div>
+   <div class="lr"><span>22:40</span><span class="m">Ticker<span>ref 87697e77 ↗</span></span><span class="a">$0.001</span><span class="st"><span class="stamp g">PAID</span></span></div>
+   <div class="lr"><span>22:40</span><span class="m">Encyclo<span>ref 05dc36f5 ↗</span></span><span class="a">$0.002</span><span class="st"><span class="stamp g">PAID</span></span></div>
+   <div class="lr"><span>22:40</span><span class="m">Wire<span>ref 1673c0c4 ↗</span></span><span class="a">$0.003</span><span class="st"><span class="stamp g">PAID</span></span></div>
+   <div class="lr x"><span>22:40</span><span class="m">Dossier Pro<span>over the per-call cap</span></span><span class="a">$0.250</span><span class="st"><span class="stamp r">REFUSED</span></span></div>
+  </div>
+  <div class="carry"><span>Carried forward</span><span>$1.994</span></div>
+ </div>
+</div></div>
+<div class="agent"><img src="art/agent-1.webp"><div class="card">
+ <div class="q">“Brief me on Solana, and get the premium dossier too.”</div>
+ <div class="chips"><div class="chip"><span>Ticker</span><span>$0.001 ✓</span></div><div class="chip"><span>Encyclo</span><span>$0.002 ✓</span></div><div class="chip"><span>Wire</span><span>$0.003 ✓</span></div><div class="chip x"><span>Dossier Pro</span><span>$0.25 refused</span></div></div>
+ <div class="a"><p>SOL is $88.96 on Kraken, down 1.2% today. The dossier was over your cap, so you weren't charged; I bought the summary and headlines for $0.005.</p></div>
+ <div class="inp"><span>Ask your agent…</span><b>Run ↵</b></div>
+ <button class="pause">Pause agent</button></div></div>
+</body></html>

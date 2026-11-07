@@ -1,17 +1,19 @@
-# Kobo: visual direction
+# Kobo: visual direction — Market Street
 
-References: https://mercury.com and https://ramp.com. Principles only; nothing signature was copied.
-- Warm off-white canvas, near-black text, secondary text at about 60% opacity.
-- One grotesk at regular weight even for big numbers, with slightly tight tracking.
-- A single accent, used only on the primary action and on live money movement.
-- Buttons rounded at about 6 px. Hairline borders, no heavy shadows.
+Chosen Nov 7 from three rendered directions (design/a-jar, b-street, c-passbook).
 
-Kobo's own metaphor:
-- **The kobo coin.** It's the smallest unit of the naira, in bronze, so the accent is copper `#B4622D`. The logo is a coin with a small "k".
-- **The till receipt.** The on-chain ledger is a receipt tape: monospace, dashed rules and perforated edges. Each line is one Paid event read back from Solana.
+The seven paid APIs are stalls on a street. The agent, a copper robot with a coin purse, walks to the stall it is paying.
+- On a settled payment, a coin arcs into the stall and the tag turns green.
+- On a refusal, the tag turns red with the reason, a rope goes across the stall and the agent crosses its arms.
+- On pause, the street greys out and the agent falls asleep with a padlock on the purse.
+
+Every pose and colour follows a real on-chain event; none of it is decoration.
+
+Art: Higgsfield nano_banana_pro, background removed (design/art).
+- Agent poses: `agent-1` idle, `agent-2` paying, `agent-3` refused, `agent-4` asleep (paused).
+- Stalls: `stall-1..7` are weather, fx, ticker, wiki, wire, analyst, dossier.
 
 Tokens:
-- Fonts: Geist (UI) and Geist Mono (amounts, addresses, receipts), from Google Fonts.
-- Colours: paper `#F5F3EE`, surface `#FFFFFF`, ink `#16140F`, muted `rgba(22,20,15,.58)`, line `rgba(22,20,15,.10)`, copper `#B4622D`, paid green `#1F7A4D`, refused red `#B3261E`.
-- Radius: 6 px for controls, 12 px for cards.
-- Layout: three columns on desktop (Allowance | Agent | Receipts), stacked on mobile.
+- Fonts: Bricolage Grotesque (display), Inter Tight (UI), DM Mono (amounts, receipts).
+- Colours: sky `#F7E7CF`→`#F3DCBC`, ground `#E7C9A2`, cream `#FBF4E8`, ink `#22180F`, terracotta `#C8643E`, paid green `#2F7D4E`, refused red `#C0392B`.
+- Buttons have a hard lip (a 3–4 px solid shadow). Cards are white at a 24 px radius. Receipts are a perforated till tape.

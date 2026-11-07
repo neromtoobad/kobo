@@ -1,0 +1,95 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
+<style>
+:root{--bg:#EEEAE3;--card:#fff;--ink:#1C1712;--mute:rgba(28,23,18,.55);--line:rgba(28,23,18,.09);--cu:#B8642E;--cu2:#E9A46A;--green:#2E7D4F;--red:#B5372B;--esp:#1E1813}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1600px;height:900px;overflow:hidden;background:var(--bg);font:400 15px/1.45 "Inter Tight";color:var(--ink)}
+.top{height:68px;display:flex;align-items:center;padding:0 28px;gap:14px}
+.logo{font:500 24px "Fraunces";letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
+.logo i{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F0B27E,#B8642E 60%,#8A4520);box-shadow:inset 0 -2px 0 rgba(0,0,0,.15)}
+.nav{display:flex;gap:4px;margin-left:28px}.nav a{padding:8px 14px;border-radius:99px;color:var(--mute);font-weight:500}.nav a.on{background:#fff;color:var(--ink)}
+.sp{flex:1}.pill{font:500 13px "JetBrains Mono";background:#fff;border-radius:99px;padding:8px 14px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:7px;vertical-align:1px}
+.grid{display:grid;grid-template-columns:420px 1fr 360px;gap:16px;padding:4px 28px 28px;height:832px}
+.hero{background:radial-gradient(120% 80% at 50% 18%,#3A2B1F 0%,#1E1813 62%);border-radius:28px;color:#F6EFE6;position:relative;overflow:hidden;padding:26px}
+.lab{font:500 11px "JetBrains Mono";letter-spacing:.08em;text-transform:uppercase;opacity:.5}
+.jar{position:absolute;left:50%;top:70px;width:250px;transform:translateX(-50%);filter:drop-shadow(0 30px 40px rgba(0,0,0,.5))}
+.glow{position:absolute;left:50%;top:150px;width:340px;height:300px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(233,164,106,.35),transparent);}
+.bal{position:absolute;left:26px;right:26px;top:430px}
+.big{font:300 76px/1 "Fraunces";letter-spacing:-.035em;margin-top:8px}.big small{font-size:.5em;opacity:.45;letter-spacing:-.01em}
+.of{opacity:.55;margin-top:6px}
+.caps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:22px}
+.cap{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 14px}
+.cap b{display:block;font:400 22px "Fraunces";margin-top:4px}
+.bar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin-top:10px;overflow:hidden}.bar i{display:block;height:100%;width:1%;background:var(--cu2)}
+.acts{position:absolute;left:26px;right:26px;bottom:24px;display:flex;gap:8px}
+.btn{border-radius:99px;padding:12px 18px;font:600 14px "Inter Tight";border:0}
+.btn.w{background:#F6EFE6;color:var(--esp);flex:1}.btn.g{background:rgba(255,255,255,.08);color:#F6EFE6}
+.mid{background:var(--card);border-radius:28px;display:flex;flex-direction:column;overflow:hidden}
+.mh{display:flex;align-items:center;gap:14px;padding:18px 22px;border-bottom:1px solid var(--line)}
+.mh img{width:46px;height:58px;object-fit:contain}
+.mh h3{font:500 20px "Fraunces";letter-spacing:-.01em}.mh p{color:var(--mute);font-size:13px}
+.state{margin-left:auto;font:500 12px "JetBrains Mono";background:#F1F7F3;color:var(--green);padding:6px 11px;border-radius:99px}
+.feed{flex:1;padding:20px 22px;overflow:hidden;display:flex;flex-direction:column;gap:12px}
+.you{align-self:flex-end;background:var(--esp);color:#F6EFE6;border-radius:18px 18px 4px 18px;padding:12px 16px;max-width:76%}
+.buys{display:flex;gap:8px;flex-wrap:wrap}
+.buy{display:flex;align-items:center;gap:10px;background:#FAF7F3;border:1px solid var(--line);border-radius:14px;padding:8px 12px 8px 8px;font-size:13px}
+.buy img{width:34px;height:34px;object-fit:contain}
+.buy b{font:500 13px "JetBrains Mono"}.buy .ok{color:var(--green);font:500 11px "JetBrains Mono"}
+.buy.no{background:#FBF1EF;border-color:rgba(181,55,43,.2)}.buy.no .ok{color:var(--red)}
+.ans{background:#FAF7F3;border-radius:18px 18px 18px 4px;padding:16px 18px;max-width:92%;font-size:14.5px}
+.ans p+p{margin-top:9px}.ans strong{font-weight:600}
+.ask{margin:0 16px 16px;display:flex;align-items:center;gap:10px;background:#F4F1EC;border-radius:99px;padding:7px 7px 7px 20px;color:var(--mute)}
+.ask .btn{margin-left:auto;background:var(--ink);color:#fff}
+.roll{background:#FFFDF8;border-radius:28px;padding:22px;position:relative;font-family:"JetBrains Mono";font-size:12.5px}
+.roll h4{font:500 20px "Fraunces";letter-spacing:-.01em}
+.rl{display:flex;justify-content:space-between;align-items:flex-start;padding:13px 0;border-bottom:1px dashed var(--line)}
+.rl .n{font-weight:500;font-size:13.5px}.rl .s{color:var(--mute);font-size:11px;margin-top:2px}
+.rl .amt{font-weight:500;font-size:14px}.coin{display:inline-block;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F0B27E,#B8642E 60%,#8A4520);vertical-align:-2px;margin-right:6px}
+.rl.ref .amt{color:var(--red);text-decoration:line-through}
+.tot{margin-top:16px;display:flex;justify-content:space-between;font-size:13px}.tot b{font-size:15px}
+.fee{color:var(--mute);margin-top:6px;display:flex;justify-content:space-between;font-size:11.5px}
+.mer{display:flex;gap:6px;margin-top:22px;flex-wrap:wrap}
+.m{display:flex;align-items:center;gap:6px;background:#F4F1EC;border-radius:99px;padding:4px 10px 4px 4px;font:500 11.5px "Inter Tight"}
+.m img{width:22px;height:22px;object-fit:contain;background:#fff;border-radius:50%}
+</style></head><body>
+<div class="top"><div class="logo"><i></i>kobo</div>
+<div class="nav"><a class="on">Allowance</a><a>Merchants</a><a>Receipts</a></div><div class="sp"></div>
+<span class="pill"><span class="dot"></span>Solana devnet</span><span class="pill">eHqr…rhJ6 · $3.00</span></div>
+<div class="grid">
+ <section class="hero"><div class="lab">Allowance vault · on chain ↗</div>
+  <div class="glow"></div><img class="jar" src="art/jar.webp">
+  <div class="bal"><div class="big">$1<small>.994</small></div><div class="of">left of $2.00 · expires 8 Nov, 22:39</div>
+   <div class="caps"><div class="cap"><span class="lab">Per call</span><b>$0.05</b></div><div class="cap"><span class="lab">Today</span><b>$0.006</b><div class="bar"><i></i></div></div><div class="cap"><span class="lab">Calls</span><b>3</b></div></div></div>
+  <div class="acts"><button class="btn w">Pause agent</button><button class="btn g">Top up</button><button class="btn g">Caps</button></div>
+ </section>
+ <section class="mid">
+  <div class="mh"><img src="art/agent-2.webp"><div><h3>Your agent</h3><p>claude-opus-5-5 · signs, never holds money</p></div><span class="state">paying · 3 settled</span></div>
+  <div class="feed">
+   <div class="you">Brief me on Solana: what it is, its price, and the latest headlines. Get the premium dossier too.</div>
+   <div class="buys">
+    <div class="buy"><img src="art/stall-3.webp"><div>Ticker <b>$0.001</b><div class="ok">✓ settled 0.9 s</div></div></div>
+    <div class="buy"><img src="art/stall-4.webp"><div>Encyclo <b>$0.002</b><div class="ok">✓ settled 1.1 s</div></div></div>
+    <div class="buy"><img src="art/stall-5.webp"><div>Wire <b>$0.003</b><div class="ok">✓ settled 0.8 s</div></div></div>
+    <div class="buy no"><img src="art/stall-7.webp"><div>Dossier Pro <b>$0.25</b><div class="ok">✕ over $0.05 cap · not charged</div></div></div>
+   </div>
+   <div class="ans"><p><strong>What it is:</strong> a proof-of-stake chain for smart contracts; its coin is SOL. Founded 2018, mainnet March 2020.</p>
+   <p><strong>Price:</strong> SOL is $88.96 on Kraken, down 1.2% on the day.</p>
+   <p><strong>Headlines:</strong> a Show HN replaying 6,524 Solana trades; the Accord dispute-resolution whitepaper.</p>
+   <p><strong>Dossier:</strong> your allowance refused it, so I bought the summary and headlines separately for $0.005.</p></div>
+  </div>
+  <div class="ask">Ask your agent…<button class="btn">Run</button></div>
+ </section>
+ <section class="roll"><h4>Receipts</h4><div class="s" style="color:var(--mute);font-size:11px;margin-top:3px">Paid events, read back from Solana</div>
+  <div style="margin-top:12px">
+   <div class="rl"><div><div class="n"><span class="coin"></span>Wire</div><div class="s">22:40:11 · ref 1673c0c4 · 389p…QpbTG ↗</div></div><div class="amt">$0.003</div></div>
+   <div class="rl"><div><div class="n"><span class="coin"></span>Encyclo</div><div class="s">22:40:08 · ref 05dc36f5 · 3ZJb…B8Syw ↗</div></div><div class="amt">$0.002</div></div>
+   <div class="rl"><div><div class="n"><span class="coin"></span>Ticker</div><div class="s">22:40:05 · ref 87697e77 · 3gvV…Vjv91 ↗</div></div><div class="amt">$0.001</div></div>
+   <div class="rl ref"><div><div class="n">Dossier Pro</div><div class="s">refused on chain · OverPerCallCap</div></div><div class="amt">$0.250</div></div>
+   <div class="rl"><div><div class="n">Allowance opened</div><div class="s">22:39:56 · 7 merchants · 5jn5…q4x2T ↗</div></div><div class="amt">$2.00</div></div>
+  </div>
+  <div class="tot"><span>Agent spent</span><b>$0.006</b></div><div class="fee"><span>Network fees, paid by Kobo</span><span>0.000030 SOL</span></div>
+  <div class="mer"><span class="m"><img src="art/stall-1.webp">Weather</span><span class="m"><img src="art/stall-2.webp">FX</span><span class="m"><img src="art/stall-3.webp">Ticker</span><span class="m"><img src="art/stall-4.webp">Encyclo</span><span class="m"><img src="art/stall-5.webp">Wire</span><span class="m"><img src="art/stall-6.webp">2nd opinion</span><span class="m"><img src="art/stall-7.webp">Dossier</span></div>
+ </section>
+</div></body></html>

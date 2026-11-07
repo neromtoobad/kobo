@@ -8,128 +8,120 @@
 <link rel="icon" href="/logo.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter+Tight:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="preload" as="image" href="/art/agent-1.webp" />
 <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="/"><img src="/logo.svg" alt="" width="28" height="28" /><span>Kobo</span></a>
-  <span class="tag">Pocket money for AI agents</span>
+  <a class="brand" href="/"><i class="coin"></i><span>kobo</span></a>
   <div class="spacer"></div>
-  <span class="net"><i></i>Solana devnet</span>
-  <button class="wallet" id="wallet" title="Your burner owner wallet (stored in this browser)">…</button>
+  <span class="pill net"><i></i>Solana devnet</span>
+  <button class="pill wallet" id="wallet" title="Your burner owner wallet (stored in this browser)">…</button>
 </header>
 
+<!-- the street: seven paid APIs as stalls, the agent walks to the one it is paying -->
+<section class="street" id="street">
+  <div class="sun"></div>
+  <div class="ground"></div>
+
+  <!-- left overlay: pitch (onboarding) or the purse (console) -->
+  <div class="left">
+    <div class="pitch" id="pitch">
+      <h1>Pocket money for your AI agent. <span>Not your card.</span></h1>
+      <p>An allowance on Solana. Your agent pays each API it uses, per call, over x402, from a vault you fund. The caps live on chain, so a confused or tricked agent can't spend past them.</p>
+    </div>
+    <div class="purse" id="purse" hidden>
+      <div class="row between"><span class="lab">Pocket money</span><a id="aLink" class="lab link" target="_blank" rel="noopener">on chain ↗</a></div>
+      <div class="big" id="aVault">$0<small>.000</small></div>
+      <div class="meter"><i id="aToday"></i></div>
+      <div class="mt"><span id="aTodayTxt">$0.000 today</span><span id="aDaily">$1.00 a day</span></div>
+      <div class="rules"><span id="aPerCall">≤ $0.05 a call</span><span id="aShops">7 shops</span><span id="aExp">till —</span></div>
+      <button class="kill" id="pause">Pause agent</button>
+      <div class="row gap small-btns">
+        <button class="ghost" id="topup">Top up $1</button>
+        <button class="ghost" id="withdraw">Withdraw $1</button>
+        <button class="ghost" id="limits">Edit caps</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="lane-wrap"><div class="lane" id="lane">
+    <div class="stalls" id="stalls"></div>
+    <div class="agent" id="agent">
+      <div class="say" id="say" hidden></div>
+      <img id="agentImg" src="/art/agent-1.webp" alt="Your agent" />
+      <span class="stop" id="stop" hidden>✕</span>
+    </div>
+  </div></div>
+  <div class="paused-sign" id="pausedSign" hidden>Agent paused by owner · every purchase is refused on chain</div>
+</section>
+
 <main id="app">
-  <div id="loading" class="loading"><img src="/logo.svg" alt="" width="40" height="40" /><p class="muted small">Reading your allowance from Solana…</p></div>
+  <div id="loading" class="loading"><i class="coin"></i><p>Reading your allowance from Solana…</p></div>
+
   <!-- onboarding -->
   <section id="onboard" class="onboard" hidden>
-    <div class="intro">
-      <h1>Give your agent pocket money,<br />not your card.</h1>
-      <p class="lede">Kobo is an allowance on Solana. Your AI agent pays for every API call it makes, over the x402 protocol, straight from a vault you fund. The limits are enforced on chain, so even a confused or tricked agent cannot spend past them. You can pause it at any moment.</p>
-      <ol class="how">
-        <li><b>402</b>A paid API answers "Payment required" with a price.</li>
-        <li><b>Sign</b>The agent signs a Kobo payment for exactly that price. It holds no funds and no SOL.</li>
-        <li><b>Settle</b>The program checks your caps, pays the merchant in under a second, and the data comes back.</li>
-      </ol>
+    <div class="card step" id="step1">
+      <span class="n">1</span>
+      <div>
+        <h3>Get test dollars</h3>
+        <p class="muted">$5 of devnet test USD into a wallet that lives in this browser. No sign-up and no SOL: Kobo pays every network fee.</p>
+        <div class="row gap"><button class="btn" id="faucet">Get $5 test USD</button><span class="bal" id="ownerBal"></span></div>
+      </div>
     </div>
-    <div class="card setup">
-      <div class="step" id="step1">
-        <span class="n">1</span>
-        <div>
-          <h3>Get test dollars</h3>
-          <p class="muted">$5 of devnet test USD into your browser wallet. No sign-up and no SOL needed: Kobo's facilitator pays every network fee.</p>
-          <button class="btn" id="faucet">Get $5 test USD</button>
-          <span class="bal" id="ownerBal"></span>
+    <div class="card step" id="step2">
+      <span class="n">2</span>
+      <div class="grow">
+        <h3>Set the rules</h3>
+        <p class="muted">Each shop's budget is on its tag above. Tap a stall to keep the agent out of it.</p>
+        <div class="grid4">
+          <label>Fund the vault<span class="inp">$<input id="fAmount" type="number" step="0.5" min="0" value="2" /></span></label>
+          <label>Max per call<span class="inp">$<input id="fPerCall" type="number" step="0.01" min="0.001" value="0.05" /></span></label>
+          <label>Max per day<span class="inp">$<input id="fDaily" type="number" step="0.1" min="0.01" value="1" /></span></label>
+          <label>Expires after<span class="inp"><input id="fHours" type="number" step="1" min="1" value="24" />h</span></label>
         </div>
+        <button class="btn primary" id="open" disabled>Open the allowance</button>
       </div>
-      <div class="step" id="step2">
-        <span class="n">2</span>
-        <div>
-          <h3>Set the allowance</h3>
-          <div class="grid2">
-            <label>Fund the vault<span class="inp">$<input id="fAmount" type="number" step="0.5" min="0" value="2" /></span></label>
-            <label>Max per call<span class="inp">$<input id="fPerCall" type="number" step="0.01" min="0.001" value="0.05" /></span></label>
-            <label>Max per day<span class="inp">$<input id="fDaily" type="number" step="0.1" min="0.01" value="1" /></span></label>
-            <label>Expires after<span class="inp"><input id="fHours" type="number" step="1" min="1" value="24" />h</span></label>
-          </div>
-          <p class="label">Merchants it may pay (budget each)</p>
-          <div id="fMerchants" class="mlist"></div>
-          <button class="btn primary" id="open" disabled>Open allowance</button>
-        </div>
-      </div>
+    </div>
+    <div class="card how">
+      <h3>How a purchase works</h3>
+      <ol>
+        <li><b>402</b>The shop answers "Payment required" with its price.</li>
+        <li><b>Sign</b>The agent signs a Kobo payment for exactly that price. It holds no money and no SOL.</li>
+        <li><b>Settle</b>The program checks your caps and pays the shop in about a second. Then the data comes back.</li>
+      </ol>
     </div>
   </section>
 
   <!-- console -->
   <section id="console" class="console" hidden>
-    <aside class="col left">
-      <div class="card allowance">
-        <div class="row between">
-          <p class="label">Allowance vault</p>
-          <a id="aLink" class="mono small" target="_blank" rel="noopener">on chain ↗</a>
-        </div>
-        <div class="big mono" id="aVault">$0.00</div>
-        <div class="meter"><div id="aToday"></div></div>
-        <p class="small muted" id="aTodayTxt"></p>
-        <dl class="kv">
-          <dt>Max per call</dt><dd class="mono" id="aPerCall"></dd>
-          <dt>Spent all time</dt><dd class="mono" id="aTotal"></dd>
-          <dt>Calls paid</dt><dd class="mono" id="aCalls"></dd>
-          <dt>Expires</dt><dd class="mono" id="aExp"></dd>
-          <dt>Agent key</dt><dd class="mono" id="aAgent"></dd>
-        </dl>
-        <button class="btn kill" id="pause">Pause agent</button>
-        <div class="row gap">
-          <button class="btn ghost" id="topup">Top up $1</button>
-          <button class="btn ghost" id="withdraw">Withdraw $1</button>
-          <button class="btn ghost" id="limits">Edit caps</button>
-        </div>
+    <div class="card chat">
+      <div class="feed" id="feed">
+        <div class="empty"><span class="lab">Your agent</span><p>Send it shopping. Each tool it uses is a separate paid API, bought per call from your pocket money.</p></div>
       </div>
-      <div class="card">
-        <p class="label">Merchants</p>
-        <div id="mRows" class="merchants"></div>
+      <div class="chips" id="chips"></div>
+      <form id="ask" class="ask">
+        <textarea id="prompt" rows="1" placeholder="Send your agent shopping…"></textarea>
+        <button class="btn primary" id="send">Run</button>
+      </form>
+      <div class="model" id="model"></div>
+    </div>
+    <div class="tape">
+      <h4>Receipts</h4>
+      <p class="sub">Paid events, read back from Solana</p>
+      <div id="tape" class="tape-body"></div>
+      <div class="tape-foot">
+        <div><span>Agent spent</span><b id="tSpent">$0.000</b></div>
+        <div class="fee"><span>Network fees, paid by Kobo</span><span id="tFees">0 SOL</span></div>
       </div>
-    </aside>
-
-    <section class="col mid">
-      <div class="card agent">
-        <div class="row between">
-          <p class="label">Agent</p>
-          <span class="small muted" id="model"></span>
-        </div>
-        <div id="feed" class="feed">
-          <div class="empty">
-            <p>Ask for something that needs live data. Each tool the agent uses is a separate paid API, bought per call.</p>
-          </div>
-        </div>
-        <div class="chips" id="chips"></div>
-        <form id="ask" class="ask">
-          <textarea id="prompt" rows="2" placeholder="Ask the agent…"></textarea>
-          <button class="btn primary" id="send">Run</button>
-        </form>
-      </div>
-    </section>
-
-    <aside class="col right">
-      <div class="tape">
-        <div class="tape-head">
-          <p class="label">Receipts</p>
-          <p class="small muted">Paid events read back from Solana</p>
-        </div>
-        <div id="tape" class="tape-body"></div>
-        <div class="tape-foot mono">
-          <div><span>Agent spent</span><b id="tSpent">$0.000</b></div>
-          <div><span>Network fees (paid by facilitator)</span><b id="tFees">0 SOL</b></div>
-        </div>
-      </div>
-    </aside>
+    </div>
   </section>
 </main>
 
 <div id="toast" class="toast" hidden></div>
 <footer class="foot">
-  <span>Program <a id="progLink" class="mono" target="_blank" rel="noopener"></a></span>
+  <span>Program <a id="progLink" target="_blank" rel="noopener"></a> · <a href="https://github.com/neromtoobad/kobo" target="_blank" rel="noopener">source</a></span>
   <span>Built for the MLH Solana Hackathon · devnet only · test money</span>
 </footer>
 <script type="module" src="/main.js"></script>
