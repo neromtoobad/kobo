@@ -96,6 +96,7 @@ function render() {
   const s = state;
   $("wallet").textContent = `${short(OWNER)} · ${usd(s?.ownerBalance ?? 0)}`;
   const a = s?.allowance;
+  $("loading").hidden = true;
   $("onboard").hidden = !!a;
   $("console").hidden = !a;
   if (!a) {

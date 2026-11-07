@@ -210,3 +210,7 @@ label { font-size: 12.5px; color: var(--muted); display: grid; gap: 4px; }
   .mopt .pr { display: none; }
   .foot { padding: 16px; }
 }
+
+.loading { display: grid; place-items: center; gap: 10px; padding: 18vh 0; }
+.loading img { animation: bob 1.2s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-6px) rotate(12deg); } }
