@@ -8,3 +8,4 @@ app/.keys/
 .DS_Store
 app/web/main.js
 design/art/*.png
+submission/*.mp4
