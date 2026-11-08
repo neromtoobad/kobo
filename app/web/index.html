@@ -17,7 +17,7 @@
   <a class="brand" href="/"><i class="coin"></i><span>kobo</span></a>
   <div class="spacer"></div>
   <span class="pill net"><i></i>Solana devnet</span>
-  <button class="pill wallet" id="wallet" title="Your burner owner wallet (stored in this browser)">…</button>
+  <button class="pill wallet" id="wallet" title="The wallet that owns this allowance">…</button>
 </header>
 
 <!-- the street: seven paid APIs as stalls, the agent walks to the one it is paying -->
@@ -64,10 +64,18 @@
   <section id="onboard" class="onboard" hidden>
     <div class="card step" id="step1">
       <span class="n">1</span>
-      <div>
-        <h3>Get test dollars</h3>
-        <p class="muted">$5 of devnet test USD into a wallet that lives in this browser. No sign-up and no SOL: Kobo pays every network fee.</p>
-        <div class="row gap"><button class="btn" id="faucet">Get $5 test USD</button><span class="bal" id="ownerBal"></span></div>
+      <div class="grow">
+        <div id="connectPane">
+          <h3>Connect a Solana wallet</h3>
+          <p class="muted">Your wallet owns the allowance and signs every change to it. It needs no SOL: Kobo pays the network fees. Devnet only, test money.</p>
+          <div class="wallets" id="walletList"></div>
+          <button class="tlink" id="useBurner" type="button">No wallet? Use a throwaway browser wallet</button>
+        </div>
+        <div id="faucetPane" hidden>
+          <h3>Get test dollars</h3>
+          <p class="muted">$5 of devnet test USD into <span id="ownerName">your wallet</span>. No sign-up and no SOL: Kobo pays every network fee.</p>
+          <div class="row gap"><button class="btn" id="faucet">Get $5 test USD</button><span class="bal" id="ownerBal"></span></div>
+        </div>
       </div>
     </div>
     <div class="card step" id="step2">

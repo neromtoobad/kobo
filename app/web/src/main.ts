@@ -1,6 +1,9 @@
-// Kobo web client. The owner wallet is a burner keypair kept in this browser; every
-// owner transaction is built and fee-paid by the server, then signed here.
+// Kobo web client. The owner is a Solana wallet (Wallet Standard: Phantom, Solflare, Backpack…) or a
+// throwaway keypair kept in this browser. Every owner transaction is built and fee-paid by the server,
+// then signed here by the owner.
 import { Keypair, Transaction } from "@solana/web3.js";
+import { getWallets } from "@wallet-standard/app";
+import type { Wallet, WalletAccount } from "@wallet-standard/base";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
 
@@ -14,20 +17,146 @@ const short = (s: string, n = 4) => `${s.slice(0, n)}…${s.slice(-n)}`;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const md = (s: string) => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 
-// ---------- burner owner wallet ----------
-function loadOwner(): Keypair {
+// ---------- the owner: a connected wallet, or a throwaway browser wallet ----------
+type Owner = {
+  kind: "wallet" | "burner";
+  name: string;
+  icon?: string;
+  pubkey: string;
+  signTxs(txs: Uint8Array[]): Promise<Uint8Array[]>;
+  signText(text: string): Promise<Uint8Array>;
+  disconnect?(): Promise<void>;
+};
+const store = {
+  get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch {} },
+  del: (k: string) => { try { localStorage.removeItem(k); } catch {} },
+};
+const enc = (t: string) => new TextEncoder().encode(t);
+let owner: Owner | null = null;
+let OWNER = "";
+
+function burnerOwner(): Owner {
+  let kp: Keypair;
   try {
-    const raw = localStorage.getItem("kobo.owner");
-    if (raw) return Keypair.fromSecretKey(bs58.decode(raw));
-  } catch {}
-  const kp = Keypair.generate();
-  try {
-    localStorage.setItem("kobo.owner", bs58.encode(kp.secretKey));
-  } catch {}
-  return kp;
+    const raw = store.get("kobo.owner");
+    kp = raw ? Keypair.fromSecretKey(bs58.decode(raw)) : Keypair.generate();
+  } catch {
+    kp = Keypair.generate();
+  }
+  store.set("kobo.owner", bs58.encode(kp.secretKey));
+  return {
+    kind: "burner",
+    name: "Browser wallet",
+    pubkey: kp.publicKey.toBase58(),
+    async signTxs(txs) {
+      return txs.map((b) => {
+        const tx = Transaction.from(b);
+        tx.partialSign(kp);
+        return tx.serialize({ requireAllSignatures: false });
+      });
+    },
+    async signText(t) {
+      return nacl.sign.detached(enc(t), kp.secretKey);
+    },
+  };
 }
-const owner = loadOwner();
-const OWNER = owner.publicKey.toBase58();
+
+const SIGN_TX = "solana:signTransaction", SIGN_MSG = "solana:signMessage";
+const feat = (w: Wallet, k: string) => (w.features as Record<string, any>)[k];
+const solanaWallets = () =>
+  getWallets().get().filter((w) => feat(w, SIGN_TX) && feat(w, "standard:connect") && w.chains.some((c) => c.startsWith("solana:")));
+const solAccount = (accts: readonly WalletAccount[]) => accts.find((a) => a.chains.some((c) => c.startsWith("solana:"))) ?? accts[0];
+
+function walletOwner(w: Wallet, acct: WalletAccount): Owner {
+  return {
+    kind: "wallet",
+    name: w.name,
+    icon: w.icon,
+    pubkey: acct.address,
+    async signTxs(txs) {
+      const sign = (chain?: string) => feat(w, SIGN_TX).signTransaction(...txs.map((transaction) => ({ account: acct, transaction, ...(chain ? { chain } : {}) })));
+      let out;
+      try {
+        out = await sign(acct.chains.includes("solana:devnet") ? "solana:devnet" : undefined);
+      } catch (e: any) {
+        if (!/chain|network|cluster/i.test(String(e?.message))) throw e;
+        out = await sign(); // a wallet that won't take a devnet chain id: let it sign on its default
+      }
+      return out.map((o: any) => o.signedTransaction as Uint8Array);
+    },
+    async signText(t) {
+      if (!feat(w, SIGN_MSG)) throw new Error(`${w.name} can't sign messages`);
+      const [o] = await feat(w, SIGN_MSG).signMessage({ account: acct, message: enc(t) });
+      return o.signature as Uint8Array;
+    },
+    async disconnect() {
+      await feat(w, "standard:disconnect")?.disconnect().catch(() => {});
+    },
+  };
+}
+
+async function connectWallet(w: Wallet, silent = false) {
+  const r = await feat(w, "standard:connect").connect(silent ? { silent: true } : undefined);
+  const acct = solAccount(r?.accounts?.length ? r.accounts : w.accounts);
+  if (!acct) throw new Error(`${w.name} shared no Solana account`);
+  setOwner(walletOwner(w, acct));
+  store.set("kobo.mode", "wallet:" + w.name);
+  // switching accounts in the wallet switches the owner; disconnecting there signs out here
+  feat(w, "standard:events")?.on("change", ({ accounts }: { accounts?: readonly WalletAccount[] }) => {
+    if (!accounts) return;
+    const a = solAccount(accounts);
+    if (!a) { store.del("kobo.mode"); location.reload(); }
+    else if (a.address !== OWNER) { setOwner(walletOwner(w, a)); }
+  });
+}
+
+function setOwner(o: Owner | null) {
+  owner = o;
+  OWNER = o?.pubkey ?? "";
+  state = null;
+  seenReceipts.clear();
+  refresh();
+}
+
+/** Restore last visit's owner: the same wallet (silently, if it allows), or the browser wallet. */
+async function restoreOwner() {
+  const mode = store.get("kobo.mode");
+  if (mode === "burner" || (!mode && store.get("kobo.owner"))) return setOwner(burnerOwner());
+  if (!mode?.startsWith("wallet:")) return;
+  const name = mode.slice(7);
+  const find = () => solanaWallets().find((w) => w.name === name);
+  let w = find();
+  for (let i = 0; !w && i < 15; i++) { await new Promise((r) => setTimeout(r, 100)); w = find(); }
+  if (w) await connectWallet(w, true).catch(() => {});
+}
+
+function renderWallets() {
+  const ws = solanaWallets();
+  $("walletList").innerHTML = ws.length
+    ? ws.map((w, i) => `<button class="wbtn" type="button" data-w="${i}"><img src="${esc(w.icon)}" alt="" />${esc(w.name)}</button>`).join("")
+    : `<p class="nowallet">No Solana wallet in this browser. Get <a href="https://phantom.com" target="_blank" rel="noopener">Phantom</a> or <a href="https://solflare.com" target="_blank" rel="noopener">Solflare</a>, or use a browser wallet.</p>`;
+}
+
+/** Runs are authorized by a session key in this browser that the owner's wallet approves once (one message, no tx). */
+const sessionText = (o: string, key: string, exp: number) =>
+  `Kobo: let this browser start agent runs for ${o} until ${new Date(exp).toISOString()}.\n\nThis signs no transaction and moves no money.\nSession key: ${key}`;
+async function runAuth(ts: number) {
+  const k = `kobo.session.${OWNER}`;
+  let s: any = null;
+  try { s = JSON.parse(store.get(k) ?? "null"); } catch {}
+  if (!s || !(s.exp > Date.now() + 10 * 60_000)) {
+    const kp = nacl.sign.keyPair();
+    const key = bs58.encode(kp.publicKey), exp = Date.now() + 7 * 86_400_000;
+    const sig = bs58.encode(await owner!.signText(sessionText(OWNER, key, exp)));
+    s = { secret: bs58.encode(kp.secretKey), key, exp, sig };
+    store.set(k, JSON.stringify(s));
+  }
+  return {
+    session: { key: s.key, exp: s.exp, sig: s.sig },
+    sig: bs58.encode(nacl.sign.detached(enc(`kobo:run:${OWNER}:${ts}`), bs58.decode(s.secret))),
+  };
+}
 
 let cfg: Config;
 let state: any = null;
@@ -65,12 +194,10 @@ async function busy<T>(btn: HTMLElement, fn: () => Promise<T>) {
 
 /** Ask the server to build an owner tx (fee-paid by the facilitator), sign it here, relay it. */
 async function act(action: string, args: Record<string, unknown> = {}) {
+  if (!owner) throw new Error("Connect a wallet first");
   const { txs } = await api("/api/tx", { owner: OWNER, action, args });
-  const signed = (txs as string[]).map((t) => {
-    const tx = Transaction.from(Uint8Array.from(atob(t), (c) => c.charCodeAt(0)));
-    tx.partialSign(owner);
-    return btoa(String.fromCharCode(...tx.serialize()));
-  });
+  const raw = (txs as string[]).map((t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0)));
+  const signed = (await owner.signTxs(raw)).map((b) => btoa(String.fromCharCode(...b)));
   const r = await api("/api/submit", { txs: signed });
   await refresh();
   return r;
@@ -216,7 +343,12 @@ const queue = (fn: () => Promise<void> | void) => (anim = anim.then(fn).catch(()
 // ---------- rendering ----------
 function render() {
   const s = state;
-  $("wallet").textContent = `${short(OWNER)} · ${usd(s?.ownerBalance ?? 0)}`;
+  const w = $("wallet");
+  w.innerHTML = owner ? `${owner.icon ? `<img src="${esc(owner.icon)}" alt="" />` : ""}${short(OWNER)} · ${usd(s?.ownerBalance ?? 0)}` : "Connect wallet";
+  w.classList.toggle("connect", !owner);
+  $("connectPane").hidden = !!owner;
+  $("faucetPane").hidden = !owner;
+  if (owner) $("ownerName").textContent = owner.kind === "wallet" ? `your ${owner.name} wallet` : "a wallet that lives in this browser";
   const a = s?.allowance;
   $("loading").hidden = true;
   $("onboard").hidden = !!a;
@@ -293,7 +425,7 @@ async function refresh() {
   if (refreshing) return;
   refreshing = true;
   try {
-    state = await api(`/api/state?owner=${OWNER}`);
+    state = OWNER ? await api(`/api/state?owner=${OWNER}`) : null;
     render();
   } catch {
   } finally {
@@ -331,11 +463,19 @@ async function run(prompt: string) {
   const buys = new Map<string, HTMLElement>();
   const merchantOf = new Map<string, string>();
   const ts = Date.now();
-  const sig = bs58.encode(nacl.sign.detached(new TextEncoder().encode(`kobo:run:${OWNER}:${ts}`), owner.secretKey));
+  let auth;
+  try {
+    auth = await runAuth(ts);
+  } catch (e: any) {
+    feedAdd(`<div class="msg err">Your wallet didn't approve the run: ${esc(String(e?.message ?? e))}</div>`);
+    running = false; send.disabled = false; send.classList.remove("busy");
+    return;
+  }
   const poll = setInterval(refresh, 2500);
   if (!state?.allowance?.paused) { pose("idle"); say("thinking…"); }
   try {
-    const r = await fetch("/api/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner: OWNER, prompt, ts, sig }) });
+    const r = await fetch("/api/run", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ owner: OWNER, prompt, ts, ...auth }) });
+    if (r.status === 401) store.del(`kobo.session.${OWNER}`);
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? `HTTP ${r.status}`);
     const reader = r.body!.getReader();
     const dec = new TextDecoder();
@@ -472,8 +612,27 @@ async function main() {
     if (b) run(b.textContent ?? "");
   });
   $("wallet").onclick = () => {
+    if (!owner) return $("step1").scrollIntoView({ behavior: "smooth", block: "center" });
     navigator.clipboard?.writeText(OWNER).catch(() => {});
-    toast(`Owner wallet ${short(OWNER, 6)} copied. It lives only in this browser.`);
+    const where = owner.kind === "wallet" ? `${esc(owner.name)} wallet` : "browser wallet (lives only in this browser)";
+    toast(`${where} ${short(OWNER, 6)} copied · <button class="tlink" id="switchW" type="button">Switch wallet</button>`, 6000);
+    $("switchW").onclick = async () => {
+      await owner?.disconnect?.();
+      store.del("kobo.mode");
+      $("toast").hidden = true;
+      setOwner(null);
+    };
+  };
+  renderWallets();
+  getWallets().on("register", renderWallets);
+  $("walletList").addEventListener("click", (ev) => {
+    const b = (ev.target as HTMLElement).closest<HTMLElement>(".wbtn");
+    const w = b && solanaWallets()[Number(b.dataset.w)];
+    if (w) busy(b!, () => connectWallet(w));
+  });
+  $("useBurner").onclick = () => {
+    store.set("kobo.mode", "burner");
+    setOwner(burnerOwner());
   };
   $("faucet").onclick = () =>
     busy($("faucet"), async () => {
@@ -537,6 +696,7 @@ async function main() {
       $("ask").dispatchEvent(new Event("submit"));
     }
   });
+  await restoreOwner();
   await refresh();
   placeAgent();
   setInterval(() => !running && document.visibilityState === "visible" && refresh(), 8000);

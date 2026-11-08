@@ -289,14 +289,26 @@ app.get("/api/state", async (c) => {
 
 // ---------- run the agent (owner proves it is them with a signed message) ----------
 let runsToday = { day: 0, n: 0 };
+/** The text an owner's wallet signs to let one browser start agent runs (must match app/web/src/main.ts). */
+const sessionText = (owner: string, key: string, exp: number) =>
+  `Kobo: let this browser start agent runs for ${owner} until ${new Date(exp).toISOString()}.\n\nThis signs no transaction and moves no money.\nSession key: ${key}`;
+
 app.post("/api/run", async (c) => {
-  const { owner, prompt, ts, sig } = await c.req.json().catch(() => ({}));
+  const { owner, prompt, ts, sig, session } = await c.req.json().catch(() => ({}));
   const o = pk(owner);
   if (!o || typeof prompt !== "string" || !prompt.trim()) return c.json({ error: "bad request" }, 400);
   const msg = new TextEncoder().encode(`kobo:run:${o.toBase58()}:${ts}`);
   let ok = false;
   try {
-    ok = Math.abs(Date.now() - Number(ts)) < 5 * 60_000 && nacl.sign.detached.verify(msg, bs58.decode(String(sig)), o.toBytes());
+    // the run is signed by the owner key itself, or by a browser session key the owner's wallet approved once
+    let signer = o.toBytes();
+    if (session) {
+      const key = pk(session.key), exp = Number(session.exp);
+      if (!key || !(exp > Date.now()) || exp - Date.now() > 8 * 86_400_000) throw new Error("bad session");
+      if (!nacl.sign.detached.verify(new TextEncoder().encode(sessionText(o.toBase58(), key.toBase58(), exp)), bs58.decode(String(session.sig)), o.toBytes())) throw new Error("bad session");
+      signer = key.toBytes();
+    }
+    ok = Math.abs(Date.now() - Number(ts)) < 5 * 60_000 && nacl.sign.detached.verify(msg, bs58.decode(String(sig)), signer);
   } catch {}
   if (!ok) return c.json({ error: "owner signature invalid" }, 401);
   const day = Math.floor(Date.now() / 86_400_000);

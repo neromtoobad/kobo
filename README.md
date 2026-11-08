@@ -46,7 +46,7 @@ agent ◀── 200 + data ── PAYMENT-RESPONSE {transaction: <signature>} �
 
 ## What's in the demo
 
-1. **Owner.** A burner wallet in your browser gets $5 of test USD from the faucet. No sign-up and no SOL. You open an allowance: fund the vault, then set the per-call cap, daily cap, expiry, and which merchants the agent may pay and how much each.
+1. **Owner.** Connect a Solana wallet (Phantom, Solflare, Backpack or any Wallet Standard wallet), or use a throwaway browser wallet if you don't have one. The faucet drops in $5 of test USD. No sign-up and no SOL. You open an allowance: fund the vault, then set the per-call cap, daily cap, expiry, and which merchants the agent may pay and how much each.
 2. **Agent.** A Claude agent (`claude-opus-5-5`) with seven paid tools, each a separate merchant with its own wallet and price:
 
    | Merchant | Price | Data |
@@ -90,6 +90,6 @@ Layout:
 ## Honest notes
 
 - This is devnet with a test-dollar mint. Moving to mainnet means swapping the mint for USDC; the program is mint-agnostic.
-- The owner wallet is a browser burner so judges can try it in one click. The owner transactions are ordinary partially signed transactions, so a wallet adapter (Phantom etc.) fits without changes.
+- The owner signs with their own wallet through Wallet Standard. Owner transactions arrive already fee-paid and co-signed by the facilitator, so the wallet adds one signature and needs no SOL. Starting agent runs uses a session key in the browser that the wallet approves once by signing a plain message (no transaction). A throwaway browser wallet is there for judges without a devnet wallet.
 - Each owner's agent key is derived server-side from a secret, because the agent runs on the server. In production the agent would hold its own key wherever it runs.
 - All code was written during the hackathon window (from Nov 7, 2026).
