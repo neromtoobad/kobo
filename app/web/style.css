@@ -236,3 +236,16 @@ h3 { font: 700 19px var(--disp); letter-spacing: -0.02em; }
   .console .tape { max-height: calc(100vh - var(--street-h) - 50px); display: flex; flex-direction: column; }
   .console .tape-body { max-height: none; flex: 1; min-height: 0; }
 }
+
+/* wallet connect */
+.pill.wallet { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.pill.wallet img { width: 16px; height: 16px; border-radius: 4px; }
+.pill.wallet.connect { background: var(--ink); color: var(--cream); font-family: var(--body); font-weight: 600; }
+.wallets { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 8px; }
+.wbtn { display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 8px 14px 8px 9px; font: 600 14px var(--body); color: var(--ink); cursor: pointer; box-shadow: 0 2px 0 var(--line); transition: transform 0.15s, box-shadow 0.15s; }
+.wbtn:hover { transform: translateY(-1px); box-shadow: 0 3px 0 rgba(34, 24, 15, 0.16); }
+.wbtn img { width: 22px; height: 22px; border-radius: 6px; }
+.nowallet { font-size: 13.5px; color: #4a3b2c; margin: 2px 0; }
+.nowallet a { color: var(--terra-d, #8a4520); }
+.tlink { border: 0; background: none; padding: 0; font: 500 13px var(--body); color: var(--terra-d, #8a4520); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.toast .tlink { color: inherit; margin-left: 4px; }
