@@ -1,6 +1,7 @@
 # Kobo: pocket money for AI agents
 
 **Live demo:** https://kobo.nerom.site (Solana devnet, test money)
+**Demo video (1:37):** https://youtu.be/v__-vyWDNz8
 **Program:** [`2wh8evQ1cAmw3Ykcq5CY1cuTzNp9iFyW9pj7nedEHyVw`](https://explorer.solana.com/address/2wh8evQ1cAmw3Ykcq5CY1cuTzNp9iFyW9pj7nedEHyVw?cluster=devnet) on devnet
 **Built for:** MLH Solana Hackathon (Nov 6–8, 2026), AI track
 

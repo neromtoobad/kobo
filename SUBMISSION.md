@@ -14,7 +14,7 @@ Pocket money for your AI agent. Not your card.
 - Live demo: https://kobo.nerom.site (Solana devnet, test money, no sign-up)
 - Code: https://github.com/neromtoobad/kobo
 - Program: `2wh8evQ1cAmw3Ykcq5CY1cuTzNp9iFyW9pj7nedEHyVw` (devnet), https://explorer.solana.com/address/2wh8evQ1cAmw3Ykcq5CY1cuTzNp9iFyW9pj7nedEHyVw?cluster=devnet
-- Demo video (1:36): <YouTube link after upload>
+- Demo video (1:37): https://youtu.be/v__-vyWDNz8
 
 ---
 
